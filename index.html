@@ -876,9 +876,7 @@
       `).join("");
 
       const codeHTML = card.code ? `
-        <div class="mt-4 rounded-xl bg-[#121216] border border-violet-300/20 p-3.5 font-mono text-[11.5px] text-violet-200 leading-relaxed overflow-x-auto shadow-inner">
-          ${escapeHTML(card.code)}
-        </div>
+        <pre class="mt-4 rounded-xl bg-[#121216] border border-violet-300/20 p-3.5 font-mono text-[11.5px] text-violet-200 leading-relaxed overflow-x-auto whitespace-pre shadow-inner">${escapeHTML(card.code)}</pre>
       ` : "";
 
       return `
