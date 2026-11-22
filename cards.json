@@ -1,0 +1,275 @@
+{
+  "cards": [
+    {
+      "id": "sys-scalability-1",
+      "category": "Interview Prep",
+      "topic": "System Design",
+      "difficulty": "Asked Often",
+      "title": "Scalability: Vertical vs Horizontal & Stateless Design",
+      "summary": "Scalability is a system's ability to handle growing traffic, data volume, or complexity without degrading latency or crashing. There are two fundamental ways to scale: Vertical Scaling (Scale Up) means upgrading a single machine with more CPU, RAM, or faster NVMe SSDs; Horizontal Scaling (Scale Out) means adding more machines behind a load balancer and splitting the work across them.\n\nReal-Life Example: Think of a popular coffee shop. Vertical scaling is hiring one super-fast barista and buying a giant 6-group espresso machine—eventually, you hit a physical ceiling (one person can only move so fast, and if they call in sick, the shop closes). Horizontal scaling is opening 5 identical counters with 5 baristas; if one machine breaks, the other 4 keep serving customers.\n\nWhat Tech Interviews Ask Today: Interviewers rarely ask you to just define vertical vs horizontal scaling. Instead, they test whether you understand *what blocks horizontal scaling*—specifically stateful sessions (storing user login state in server RAM instead of Redis), database write bottlenecks on a single primary node, and hot-key/celebrity problems where 10M users hit one shard at once.",
+      "bullets": [
+        "Vertical Scaling hits a hard hardware & cost ceiling and creates a Single Point of Failure (SPOF).",
+        "Horizontal Scaling requires stateless application servers—move session state out to Redis or JWTs.",
+        "Read-heavy scaling uses Read Replicas + CDNs; Write-heavy scaling requires Sharding or Partitioning.",
+        "Interview Trap: Don't say 'just add more servers' without explaining how the database layer scales too."
+      ],
+      "code": "Client -> Load Balancer -> [Stateless App 1..N] -> Redis (State) + Sharded DB"
+    },
+    {
+      "id": "sys-availability-1",
+      "category": "Interview Prep",
+      "topic": "System Design",
+      "difficulty": "Asked Often",
+      "title": "Availability: Nine-Nines, Redundancy & Failover",
+      "summary": "Availability measures the percentage of time a system stays operational and responds successfully to requests. It's usually expressed in 'nines': 99.9% (three nines) allows ~8.76 hours of downtime per year, whereas 99.999% (five nines) allows just 5.26 minutes of downtime per year. High availability is achieved by eliminating Single Points of Failure (SPOFs) through redundancy, health checks, and automated failover.\n\nReal-Life Example: Commercial airplanes have dual or triple redundant hydraulic and navigation systems. If Engine #1 fails mid-flight, Engine #2 keeps the plane airborne seamlessly without passengers even noticing—that's Active-Active or Active-Passive failover.\n\nWhat Tech Interviews Ask Today: Expect questions on Active-Passive vs Active-Active setups, multi-AZ vs multi-region deployments, and calculating composite availability (if Service A is 99.9% and calls Service B which is 99.9% synchronously, combined availability drops to 99.8%). Interviewers also probe graceful degradation—e.g., if the recommendations engine goes down on Amazon, still let users check out!",
+      "bullets": [
+        "99.9% = 8.76 hrs/yr downtime | 99.99% = 52.6 mins/yr | 99.999% = 5.26 mins/yr.",
+        "Active-Passive: Standby node takes over on heartbeat failure (cheaper, slight failover blip). Active-Active: All nodes serve traffic simultaneously.",
+        "Serial dependencies multiply failure risk: A_total = A_1 × A_2. Parallel redundancy multiplies uptime: 1 - (1 - A)^n.",
+        "Interview Tip: Always mention Circuit Breakers and Graceful Degradation so one failing microservice doesn't cause a cascading outage."
+      ],
+      "code": "Series: 0.999 * 0.999 = 99.80%  |  Parallel (2 nodes): 1 - (0.001)^2 = 99.9999%"
+    },
+    {
+      "id": "sys-latency-throughput-1",
+      "category": "Interview Prep",
+      "topic": "System Design",
+      "difficulty": "Core",
+      "title": "Latency vs Throughput & Tail Latency (p99)",
+      "summary": "Latency is the time it takes for a single request to travel from client to server and return a response (measured in milliseconds). Throughput is the total number of requests or amount of data a system can process per unit of time (measured in RPS/QPS or MB/s). Improving one doesn't automatically improve the other—batching writes increases throughput but adds latency for individual items.\n\nReal-Life Example: A highway toll plaza vs a sports car. Latency is how fast one Ferrari gets from Gate A to Gate B (e.g., 2 minutes). Throughput is how many cars pass through the toll plaza per minute. Adding 10 more toll lanes dramatically boosts throughput, even though each individual car still takes 2 minutes to cross.\n\nWhat Tech Interviews Ask Today: Modern interviewers heavily focus on Tail Latency (p95, p99, p99.9) rather than averages. Averages hide pain: if 99% of requests take 10ms and 1% take 2 seconds due to garbage collection or cold cache misses, a page making 20 parallel microservice calls has an ~18% chance of hitting at least one slow p99 call!",
+      "bullets": [
+        "Average latency lies—always design and monitor p95 and p99 tail latencies.",
+        "Little's Law: Concurrency (L) = Arrival Rate (λ) × Average Latency (W).",
+        "Back-of-the-envelope numbers to know: L1 cache ~1ns, RAM ~100ns, SSD read ~100µs, Same-region network ~0.5ms, Cross-continent ~100ms.",
+        "Interview Tip: Use request hedging (send duplicate request if p95 threshold passes) or async queues to tame tail latency."
+      ],
+      "code": "P(at least 1 slow call in N parallel calls) = 1 - (0.99)^N  -> For N=20, ~18.2%!"
+    },
+    {
+      "id": "sys-load-balancers-1",
+      "category": "Interview Prep",
+      "topic": "System Design",
+      "difficulty": "Asked Often",
+      "title": "Load Balancers: L4 vs L7, Algorithms & Health Checks",
+      "summary": "A Load Balancer (LB) sits in front of your backend servers and distributes incoming client traffic so no single server gets overwhelmed. Layer 4 (Transport) LBs route packets based only on IP and TCP/UDP port—making them ultra-fast. Layer 7 (Application) LBs inspect HTTP headers, cookies, and URL paths, enabling smart routing (e.g., /api/video -> video cluster, /api/auth -> auth cluster), SSL termination, and rate limiting.\n\nReal-Life Example: Think of a hospital triage desk vs a highway traffic cop. A Layer 4 LB is the traffic cop waving every car alternately into Lane 1, Lane 2, or Lane 3 without looking inside the car. A Layer 7 LB is the triage nurse who asks what's wrong and routes heart patients to Cardiology and broken bones to Orthopedics.\n\nWhat Tech Interviews Ask Today: Expect questions on routing algorithms (Round Robin vs Weighted Round Robin vs Least Connections vs Consistent Hashing), sticky sessions (and why to avoid them in favor of shared Redis state), and how the LB itself avoids becoming a Single Point of Failure (using DNS round-robin or Anycast IPs + Active-Passive LBs like HAProxy/AWS ALB).",
+      "bullets": [
+        "L4 (Network LB): Fast, kernel-level packet forwarding, no SSL inspection or URL routing.",
+        "L7 (Application LB): Terminates TLS, routes by URL/headers, supports WebSockets and sticky cookies.",
+        "Algorithms: Round Robin (equal servers), Least Connections (varying request durations like WebSockets/LLM streams), IP Hash / Consistent Hashing (cache affinity).",
+        "Health Checks: LBs ping /healthz every few seconds and pull failing instances out of rotation automatically."
+      ],
+      "code": "Client --HTTPS--> [L7 ALB (TLS Term)] --HTTP--> /auth (Auth Pool) | /search (Search Pool)"
+    },
+    {
+      "id": "sys-databases-indexing-1",
+      "category": "Interview Prep",
+      "topic": "System Design",
+      "difficulty": "Asked Often",
+      "title": "Databases & Indexing: SQL vs NoSQL, B+ Trees & Sharding",
+      "summary": "Choosing a database comes down to data shape, consistency needs, and read/write patterns. Relational SQL databases (PostgreSQL, MySQL) enforce schemas and ACID transactions using B+ Tree indexes—great for equality AND range queries (BETWEEN, ORDER BY). NoSQL databases trade strict joins for horizontal scale: LSM-Tree write-optimized stores (Cassandra) excel at massive append/write throughput, while Document stores (MongoDB) fit flexible schemas.\n\nReal-Life Example: A B+ Tree index is like the index at the back of a thick textbook. Without it, finding every page mentioning 'Deadlock' requires reading all 800 pages (a Full Table Scan). With the alphabetical index, you jump straight to 'D' and flip directly to pages 112–118. However, every new page you add to the book means updating that index too—which is why too many indexes slow down database writes.\n\nWhat Tech Interviews Ask Today: Be ready to explain SQL vs NoSQL trade-offs, composite index column ordering (leftmost prefix rule), Read Replicas (with replication lag pitfalls like reading your own write), and Sharding strategies (hash-based vs range-based sharding and how to avoid hot shards).",
+      "bullets": [
+        "B+ Tree Indexes: Fast reads and range scans, but every INSERT/UPDATE must update the index (slower writes).",
+        "LSM Trees (Cassandra/RocksDB): Append to in-memory MemTable + WAL for ultra-fast writes, compact SSTables in background.",
+        "Read Replicas scale reads, but asynchronous replication causes 'Read-Your-Own-Write' staleness unless critical reads hit Primary.",
+        "Sharding splits huge tables across machines by a shard key—pick a high-cardinality key (user_id) to avoid hot spots."
+      ],
+      "code": "INDEX (country, age) helps: WHERE country='IN' AND age > 20  |  Useless for: WHERE age > 20 alone"
+    },
+    {
+      "id": "sys-caching-1",
+      "category": "Interview Prep",
+      "topic": "System Design",
+      "difficulty": "Asked Often",
+      "title": "Caching: Patterns, Eviction & Thundering Herd",
+      "summary": "Caching stores frequently accessed data in ultra-fast RAM (Redis, Memcached) or edge CDNs to slash latency from tens of milliseconds down to sub-millisecond and protect your database from traffic spikes. Common strategies include Cache-Aside (app checks cache, queries DB on miss, writes to cache), Write-Through (writes go to cache + DB synchronously), and Write-Back (writes hit cache immediately and flush to DB asynchronously).\n\nReal-Life Example: Instead of walking to the library basement archive every time someone asks for the current weather (database query), a librarian keeps today's forecast pinned on a sticky note right on the front desk (Redis cache). Once midnight passes (TTL expires), they fetch tomorrow's forecast once and pin the new note.\n\nWhat Tech Interviews Ask Today: Interviewers love asking what goes wrong with caches at scale: Cache Stampede / Thundering Herd (100k users hit the DB simultaneously when a hot key expires), Cache Penetration (queries for non-existent IDs bypass cache—solved with Bloom Filters or caching null), Hot Keys (solved with local in-app L1 cache or key replication), and Eviction Policies (LRU vs LFU).",
+      "bullets": [
+        "Cache-Aside: Most common; resilient if Redis crashes, but first request after miss pays DB latency.",
+        "Eviction Policies: LRU (Least Recently Used) for general recency; LFU (Least Frequently Used) for skewed hot-item workloads.",
+        "Prevent Cache Stampede: Add random jitter to TTLs, use distributed mutex/singleflight locks, or refresh hot keys proactively.",
+        "Cache Penetration: Use a Bloom Filter in front of cache/DB to reject non-existent IDs in O(1) memory."
+      ],
+      "code": "Read -> Redis Hit? Return : Acquire Singleflight Lock -> Query DB -> SETEX(key, ttl+jitter, val)"
+    },
+    {
+      "id": "sys-queues-1",
+      "category": "Interview Prep",
+      "topic": "System Design",
+      "difficulty": "Asked Often",
+      "title": "Message Queues: Async Processing, Backpressure & DLQs",
+      "summary": "Message Queues (Kafka, RabbitMQ, AWS SQS) decouple producers from consumers so heavy or slow work doesn't block user-facing API responses. Instead of resizing a 4K video or sending 500 emails inside the HTTP request, the API drops a lightweight event onto the queue, returns '202 Accepted' in 10ms, and background worker pools process jobs at their own pace.\n\nReal-Life Example: When you order food at a busy restaurant, the cashier doesn't make you stand at the register while the chef grills your burger (synchronous). Instead, they hand you a receipt number and clip your order ticket onto the kitchen rail (the message queue). Even if 30 customers walk in at once, the register stays fast and the kitchen works through tickets steadily.\n\nWhat Tech Interviews Ask Today: Expect deep dives into At-Least-Once vs Exactly-Once delivery (and why your consumers MUST be idempotent using an idempotency key), Dead Letter Queues (DLQs) for poison-pill messages that crash workers repeatedly, Backpressure / Auto-scaling workers on queue depth, and Kafka Partition ordering guarantees.",
+      "bullets": [
+        "Peak Load Smoothing: Queues absorb 10x traffic spikes without crashing downstream databases.",
+        "Delivery Semantics: Real-world queues usually guarantee At-Least-Once delivery—use idempotency keys in DB to prevent duplicate charges/emails.",
+        "Dead Letter Queue (DLQ): After N failed retries, move toxic messages to a DLQ so they don't block healthy jobs.",
+        "Kafka vs SQS/RabbitMQ: Kafka is a durable, replayable distributed log (great for event streaming); SQS/RabbitMQ delete messages once acked (great for task queues)."
+      ],
+      "code": "POST /upload -> S3 + Enqueue(job_id) -> 202 Accepted  ||  Worker -> Check Idempotency -> Process -> ACK (or DLQ)"
+    },
+    {
+      "id": "sys-cap-1",
+      "category": "Interview Prep",
+      "topic": "System Design",
+      "difficulty": "Asked Often",
+      "title": "CAP Theorem & PACELC: Distributed Trade-Offs",
+      "summary": "The CAP Theorem states that in a distributed data store, you can simultaneously guarantee at most two of: Consistency (every read receives the most recent write or an error), Availability (every request receives a non-error response, without guaranteeing it's the latest), and Partition Tolerance (the system continues operating despite network drops between nodes). Since network partitions are inevitable in real networks, the real design choice during a partition is CP vs AP.\n\nReal-Life Example: Imagine two bank ATM branches connected by a fiber cable. Suddenly, a construction crew cuts the cable (Partition). If someone tries to withdraw ₹5,000 at Branch A: a CP system locks withdrawals until the cable is fixed so you can't double-spend across branches (Consistency over Availability). An AP system lets you withdraw anyway and reconciles balances later when the cable reconnects (Availability over Consistency).\n\nWhat Tech Interviews Ask Today: Strong candidates also mention PACELC: even when there is NO partition (E = Else), you still trade off Latency vs Consistency (L vs C)—synchronous replication across continents gives strong consistency but high latency, while async replication gives low latency with eventual consistency. Know concrete examples: CP (ZooKeeper, etcd, HBase), AP (Cassandra, DynamoDB default).",
+      "bullets": [
+        "Partition Tolerance (P) is non-negotiable in distributed systems—so 'CA' doesn't exist across a network.",
+        "Choose CP for financial ledgers, inventory/seat locking, and distributed locks (ZooKeeper, Spanner).",
+        "Choose AP for social feeds, view counters, shopping carts, and analytics (Cassandra, DynamoDB).",
+        "PACELC extends CAP: If Partition -> Availability vs Consistency; Else -> Latency vs Consistency."
+      ],
+      "code": "Partition? -> CP (reject minority writes) vs AP (serve stale)  |  Normal? -> Sync (Low Latency? No) vs Async (Fast)"
+    },
+    {
+      "id": "sys-hashing-1",
+      "category": "Interview Prep",
+      "topic": "System Design",
+      "difficulty": "Core",
+      "title": "Consistent Hashing: Scaling Caches & Shards Smoothly",
+      "summary": "If you distribute cache keys across N servers using simple modulo hashing (hash(key) % N), adding or removing just 1 server changes N and invalidates nearly 100% of keys—causing a massive database stampede. Consistent Hashing solves this by mapping both servers and keys onto a 0 to 2^32-1 circular hash ring. A key belongs to the first server found moving clockwise.\n\nReal-Life Example: Think of guests seated around a circular wedding table with 4 water pitchers placed evenly around the circle. Every guest uses the nearest pitcher clockwise from their seat. If a 5th pitcher is added between two guests, only the few guests right next to that new pitcher switch—everyone else at the table keeps using their original pitcher.\n\nWhat Tech Interviews Ask Today: Interviewers almost always follow up with: 'What if one server gets way more keys than others, or a server crashes and overloads its neighbor?' The answer is Virtual Nodes (vnodes)—placing each physical server at 100–200 points around the ring so load balances evenly and a failed server's traffic spreads across all remaining servers.",
+      "bullets": [
+        "Modulo hashing (hash % N) remaps ~90%+ keys on resize; Consistent Hashing remaps only ~1/N keys.",
+        "Virtual Nodes (vnodes) solve non-uniform data distribution and uneven hardware capacities.",
+        "Used in production by Amazon DynamoDB, Apache Cassandra, Discord, and Akamai CDNs."
+      ],
+      "code": "Without vnodes: 1 node dies -> 1 neighbor takes 2x load. With 150 vnodes/server: load spreads evenly."
+    }
+  ],
+  "quizzes": [
+    {
+      "id": "q-sys-scalability-1",
+      "relatedCardId": "sys-scalability-1",
+      "category": "Interview Prep",
+      "topic": "System Design",
+      "question": "You add 4 more web servers behind a load balancer, but users suddenly get randomly logged out on every second click. What is the most likely architectural mistake?",
+      "options": [
+        "You used Round Robin instead of Least Connections",
+        "User session state is stored in each server's local RAM instead of a shared store like Redis",
+        "Horizontal scaling only works for NoSQL databases",
+        "The servers don't have enough NVMe disk space"
+      ],
+      "answerIndex": 1,
+      "explanation": "Horizontal scaling requires stateless app servers. If sessions live in local server memory, routing the user's next request to a different server loses their session."
+    },
+    {
+      "id": "q-sys-availability-1",
+      "relatedCardId": "sys-availability-1",
+      "category": "Interview Prep",
+      "topic": "System Design",
+      "question": "An API gateway calls 3 independent microservices synchronously in sequence, and each microservice has 99.9% availability. What happens to the overall availability of that API endpoint?",
+      "options": [
+        "It stays 99.9%",
+        "It improves to 99.9999%",
+        "It drops to roughly 99.7% (0.999^3)",
+        "It drops to 33.3%"
+      ],
+      "answerIndex": 2,
+      "explanation": "Serial synchronous dependencies multiply failure probabilities: 0.999 × 0.999 × 0.999 ≈ 99.7%, which is why circuit breakers and graceful degradation matter."
+    },
+    {
+      "id": "q-sys-latency-1",
+      "relatedCardId": "sys-latency-throughput-1",
+      "category": "Interview Prep",
+      "topic": "System Design",
+      "question": "Your service's average latency is a healthy 25ms, yet 15% of page loads feel sluggish. A single page load triggers 15 parallel backend calls. What metric explains this?",
+      "options": [
+        "High p99 tail latency—one slow call in 15 drags down the whole page",
+        "Low throughput on the CDN",
+        "Little's Law overflow",
+        "Vertical scaling ceiling"
+      ],
+      "answerIndex": 0,
+      "explanation": "When a page fans out to 15 parallel calls, the user waits for the slowest call. Even a 1% tail spike (p99) gives a 1 - 0.99^15 ≈ 14% chance of a slow page."
+    },
+    {
+      "id": "q-sys-lb-1",
+      "relatedCardId": "sys-load-balancers-1",
+      "category": "Interview Prep",
+      "topic": "System Design",
+      "question": "You are load-balancing long-lived WebSocket connections and AI streaming responses whose durations vary from 2 seconds to 10 minutes. Which LB algorithm fits best?",
+      "options": [
+        "Simple Round Robin",
+        "Least Connections",
+        "DNS Round Robin only",
+        "Static IP Modulo"
+      ],
+      "answerIndex": 1,
+      "explanation": "Round Robin can pile long-lived streams onto one server while others sit idle. Least Connections routes new requests to the server with the fewest active connections."
+    },
+    {
+      "id": "q-sys-db-1",
+      "relatedCardId": "sys-databases-indexing-1",
+      "category": "Interview Prep",
+      "topic": "System Design",
+      "question": "After a user updates their profile bio, they refresh the page and still see their old bio for 2 seconds. Your DB uses 1 Primary and 3 Read Replicas. Why did this happen?",
+      "options": [
+        "The B+ Tree index is corrupted",
+        "Asynchronous replication lag caused the read replica to serve stale data",
+        "You forgot to shard the users table",
+        "SQL databases don't support updates"
+      ],
+      "answerIndex": 1,
+      "explanation": "Async read replicas lag behind the primary by milliseconds to seconds. Critical 'read-your-own-write' flows should route recent writers to the primary or cache."
+    },
+    {
+      "id": "q-sys-cache-1",
+      "relatedCardId": "sys-caching-1",
+      "category": "Interview Prep",
+      "topic": "System Design",
+      "question": "A celebrity posts a viral photo. Exactly 1 hour later, its Redis key TTL expires and 80,000 concurrent requests hammer your SQL database at once. What is this called and how do you fix it?",
+      "options": [
+        "Cache Penetration; fix with SQL joins",
+        "Cache Stampede (Thundering Herd); fix with singleflight/mutex locks or jittered/proactive refresh",
+        "Split-Brain; fix with Paxos",
+        "Circular Wait; fix with lock ordering"
+      ],
+      "answerIndex": 1,
+      "explanation": "When a hot key expires, thousands of requests miss simultaneously and query the DB. Using a singleflight lock lets only 1 request rebuild the cache while others wait."
+    },
+    {
+      "id": "q-sys-queue-1",
+      "relatedCardId": "sys-queues-1",
+      "category": "Interview Prep",
+      "topic": "System Design",
+      "question": "A malformed payment event keeps crashing your queue worker after 3 retries, blocking and wasting worker capacity. What pattern isolates it safely?",
+      "options": [
+        "Switch from Horizontal to Vertical scaling",
+        "Route it to a Dead Letter Queue (DLQ) after max retries",
+        "Disable acknowledgments (ACKs)",
+        "Add a B+ Tree index to the queue"
+      ],
+      "answerIndex": 1,
+      "explanation": "A Dead Letter Queue (DLQ) sidelines poison-pill messages after N failed attempts so healthy messages keep flowing and engineers can inspect the failure."
+    },
+    {
+      "id": "q-sys-cap-1",
+      "relatedCardId": "sys-cap-1",
+      "category": "Interview Prep",
+      "topic": "System Design",
+      "question": "In a distributed airline seat-booking service, two regions lose network connectivity to each other. To prevent selling the exact same seat twice, which CAP trade-off must you pick?",
+      "options": [
+        "AP — let both regions sell seats and merge later",
+        "CA — ignore the network partition",
+        "CP — reject bookings on the minority partition to preserve consistency",
+        "Write-Back caching"
+      ],
+      "answerIndex": 2,
+      "explanation": "Seat inventory cannot tolerate double-booking, so during a partition you sacrifice availability on the disconnected side (CP) to guarantee consistency."
+    },
+    {
+      "id": "q-sys-hashing-1",
+      "relatedCardId": "sys-hashing-1",
+      "category": "Interview Prep",
+      "topic": "System Design",
+      "question": "In Consistent Hashing, why do production systems like DynamoDB and Cassandra assign 100+ Virtual Nodes (vnodes) per physical server on the hash ring?",
+      "options": [
+        "To encrypt keys in transit",
+        "To avoid uneven key distribution and spread load if a server fails",
+        "To eliminate the need for network partitions",
+        "To convert NoSQL into ACID SQL"
+      ],
+      "answerIndex": 1,
+      "explanation": "Without vnodes, a few servers can end up owning huge arcs of the ring (hot spots), and a crashed node dumps 100% of its load onto a single neighbor."
+    }
+  ]
+}

@@ -1,0 +1,1544 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0B0B10" />
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="icon" type="image/png" href="./icon-192.png" />
+  <link rel="apple-touch-icon" href="./icon-192.png" />
+  <title>ByteCards — Interview Theory</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            display: ['Space Grotesk', 'Inter', 'sans-serif'],
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    * { -webkit-tap-highlight-color: transparent; }
+    html, body { height: 100%; overscroll-behavior-y: none; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+    /* Soft Black base with Violet & Forest Lilac accents */
+    .fluid-bg {
+      background-color: #0B0B10;
+    }
+    html:not(.dark) .fluid-bg {
+      background-color: #F4F2F8;
+    }
+
+    /* GPU-accelerated moving ambient pattern */
+    @keyframes driftOrb1 {
+      0% { transform: translate3d(-6%, -4%, 0) scale(1); }
+      50% { transform: translate3d(10%, 8%, 0) scale(1.08); }
+      100% { transform: translate3d(-2%, 14%, 0) scale(0.96); }
+    }
+    @keyframes driftOrb2 {
+      0% { transform: translate3d(6%, 6%, 0) scale(1); }
+      50% { transform: translate3d(-12%, -6%, 0) scale(1.1); }
+      100% { transform: translate3d(4%, -10%, 0) scale(0.98); }
+    }
+    @keyframes gridDrift {
+      0% { transform: translate3d(0, 0, 0); }
+      100% { transform: translate3d(28px, 28px, 0); }
+    }
+    .ambient-orb-1 {
+      animation: driftOrb1 22s ease-in-out infinite alternate;
+      will-change: transform;
+    }
+    .ambient-orb-2 {
+      animation: driftOrb2 28s ease-in-out infinite alternate;
+      will-change: transform;
+    }
+    .ambient-grid {
+      background-image: radial-gradient(rgba(196, 181, 253, 0.14) 1px, transparent 1px);
+      background-size: 28px 28px;
+      animation: gridDrift 18s linear infinite;
+      will-change: transform;
+    }
+    html:not(.dark) .ambient-grid {
+      background-image: radial-gradient(rgba(109, 40, 217, 0.12) 1px, transparent 1px);
+    }
+
+    /* Fluid Glass Surfaces (Balanced Soft Black + Violet tint) */
+    .glass-panel {
+      background: rgba(20, 18, 28, 0.68);
+      backdrop-filter: blur(22px) saturate(160%);
+      -webkit-backdrop-filter: blur(22px) saturate(160%);
+      border: 1px solid rgba(196, 181, 253, 0.14);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    }
+    html:not(.dark) .glass-panel {
+      background: rgba(255, 255, 255, 0.72);
+      border: 1px solid rgba(124, 58, 237, 0.14);
+      box-shadow: 0 8px 28px rgba(76, 29, 149, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    }
+
+    .glass-soft-black {
+      background: rgba(18, 18, 24, 0.78);
+      backdrop-filter: blur(24px) saturate(150%);
+      -webkit-backdrop-filter: blur(24px) saturate(150%);
+      border: 1px solid rgba(196, 181, 253, 0.18);
+      box-shadow: 0 18px 40px rgba(10, 6, 20, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.10);
+    }
+    html:not(.dark) .glass-soft-black {
+      background: rgba(255, 255, 255, 0.88);
+      border: 1px solid rgba(124, 58, 237, 0.18);
+      box-shadow: 0 16px 36px rgba(76, 29, 149, 0.10);
+    }
+
+    /* GPU-only micro animations */
+    .gpu-press { transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.18s ease; }
+    .gpu-press:active { transform: scale(0.97); }
+
+    @keyframes fadeSlideUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .view-enter { animation: fadeSlideUp 0.26s cubic-bezier(0.22, 1, 0.36, 1); }
+
+    /* Tactile Inshorts-style Card Stack */
+    #card-deck-stage {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      touch-action: pan-y;
+      user-select: text;
+    }
+    .deck-card {
+      position: absolute;
+      inset: 12px 14px 76px 14px;
+      will-change: transform, opacity;
+      transition: transform 0.38s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.32s ease;
+    }
+    .deck-card.dragging { transition: none !important; }
+
+    /* Splash screen transition */
+    #splash-screen {
+      transition: opacity 0.55s cubic-bezier(0.22, 1, 0.36, 1), transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    #splash-screen.splash-hide {
+      opacity: 0;
+      transform: scale(1.03);
+      pointer-events: none;
+    }
+    @keyframes splashBar {
+      from { transform: scaleX(0); }
+      to { transform: scaleX(1); }
+    }
+    .splash-progress-fill {
+      transform-origin: left;
+      animation: splashBar 1.45s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+
+    @keyframes pulsePop {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.14); }
+      100% { transform: scale(1); }
+    }
+    .animate-pop { animation: pulsePop 0.35s ease-out; }
+  </style>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+</head>
+<body class="fluid-bg text-zinc-900 dark:text-zinc-100 font-sans antialiased selection:bg-violet-400/30">
+
+  <!-- MOVING AMBIENT PATTERN (GPU-only transform) -->
+  <div aria-hidden="true" class="pointer-events-none fixed inset-0 z-0 overflow-hidden">
+    <div class="ambient-grid absolute -inset-8 opacity-60"></div>
+    <div class="ambient-orb-1 absolute -top-24 -left-20 h-96 w-96 rounded-full blur-3xl" style="background: radial-gradient(circle, rgba(139, 92, 246, 0.28) 0%, transparent 70%);"></div>
+    <div class="ambient-orb-2 absolute bottom-[-10%] right-[-10%] h-[28rem] w-[28rem] rounded-full blur-3xl" style="background: radial-gradient(circle, rgba(196, 181, 253, 0.20) 0%, transparent 70%);"></div>
+  </div>
+
+  <!-- TEMPORARY WELCOME / SPLASH SCREEN -->
+  <div id="splash-screen" class="fluid-bg fixed inset-0 z-50 flex flex-col items-center justify-center p-6 text-center">
+    <div class="glass-panel rounded-3xl px-8 py-9 max-w-xs w-full space-y-5">
+      <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#121216] text-violet-300 font-display font-bold text-2xl shadow-lg border border-violet-300/20">
+        B/
+      </div>
+      <div>
+        <p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-violet-600 dark:text-violet-300">ByteCards</p>
+        <h2 class="mt-2 font-display text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">Ready to learn?</h2>
+        <p class="mt-1 text-xs text-zinc-600 dark:text-violet-200/75">2 cards a day keeps the interview rust away.</p>
+      </div>
+      <div class="h-1 w-full overflow-hidden rounded-full bg-violet-950/30 dark:bg-white/10">
+        <div class="splash-progress-fill h-full w-full rounded-full bg-gradient-to-r from-violet-400 to-fuchsia-300"></div>
+      </div>
+      <button id="btn-skip-splash" type="button" class="text-[11px] font-semibold text-violet-700 dark:text-violet-300/80 hover:text-white transition">
+        Tap to enter →
+      </button>
+    </div>
+  </div>
+
+  <!-- MAIN APP SHELL -->
+  <div id="app" class="mx-auto flex h-[100dvh] w-full max-w-5xl flex-col overflow-hidden relative z-10 lg:border-x lg:border-white/10">
+
+    <!-- Top Header -->
+    <header id="top-header" class="glass-panel sticky top-0 z-30 flex items-center justify-between border-x-0 border-t-0 px-4 sm:px-6 py-3">
+      <div class="flex items-center gap-2.5">
+        <div class="flex h-8 w-8 items-center justify-center rounded-xl bg-[#121216] text-violet-300 font-display font-bold text-sm border border-violet-300/20">
+          B/
+        </div>
+        <div>
+          <h1 class="font-display text-sm font-bold tracking-tight leading-none">ByteCards</h1>
+          <p class="text-[11px] text-zinc-600 dark:text-violet-200/70 mt-0.5">Interview Theory</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <button id="btn-install-pwa" type="button" class="hidden gpu-press items-center gap-1.5 rounded-full glass-panel px-3 py-1 text-xs font-semibold">
+          <i data-lucide="download" class="h-3.5 w-3.5 text-violet-400"></i>
+          <span>Install</span>
+        </button>
+
+        <button id="btn-streak-pill" type="button" class="gpu-press flex items-center gap-1.5 rounded-full bg-[#121216]/85 border border-violet-300/20 px-2.5 py-1 text-xs font-semibold text-violet-100 transition" title="Daily Streak: 2 cards or 1 quiz">
+          <span class="text-xs leading-none">🔥</span>
+          <span id="streak-count">0d</span>
+          <span id="streak-goal-badge" class="ml-0.5 rounded-full bg-violet-500/25 px-1.5 py-0.5 text-[10px] font-bold text-violet-200">0/2</span>
+        </button>
+
+        <button id="btn-header-auth" type="button" class="gpu-press flex h-8 w-8 items-center justify-center rounded-full bg-[#121216]/80 border border-violet-300/20 text-violet-200 hover:border-violet-300/50 transition" title="Profile &amp; Sync">
+          <i data-lucide="user" class="h-4 w-4"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Viewport -->
+    <main class="relative flex-1 overflow-hidden">
+
+      <!-- VIEW 1: EXPLORE (Bento Grid + Dynamic Colored Topic Carousels) -->
+      <section id="view-explore" class="view-enter h-full overflow-y-auto no-scrollbar px-4 sm:px-6 pt-5 pb-24 space-y-6">
+
+        <!-- BENTO GRID (Continue block appears ONLY after user has read >= 1 card) -->
+        <div id="bento-grid" class="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <!-- Continue Block (Hidden until readCardIds.length > 0) -->
+          <button id="bento-continue-tile" type="button" class="hidden gpu-press col-span-2 md:col-span-2 glass-panel rounded-2xl p-4 text-left flex flex-col justify-between min-h-[124px] hover:border-violet-300/40 transition">
+            <div class="flex items-center justify-between w-full">
+              <span class="inline-flex items-center gap-1.5 rounded-full bg-[#121216]/80 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-violet-300">
+                <span class="h-1.5 w-1.5 rounded-full bg-violet-400"></span> Continue
+              </span>
+              <i data-lucide="arrow-up-right" class="h-4 w-4 text-violet-300"></i>
+            </div>
+            <div class="mt-3">
+              <p id="bento-continue-topic" class="font-display text-lg font-bold tracking-tight">System Design</p>
+              <p id="bento-continue-title" class="text-xs text-zinc-600 dark:text-violet-200/75 truncate mt-0.5">Resume where you left off</p>
+            </div>
+          </button>
+
+          <!-- Daily Quiz Tile -->
+          <button id="btn-quick-quiz-hero" type="button" class="gpu-press col-span-1 glass-panel rounded-2xl p-4 text-left flex flex-col justify-between min-h-[124px] hover:border-violet-300/40 transition">
+            <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-[#121216] text-violet-300 border border-violet-300/20">
+              <i data-lucide="zap" class="h-4 w-4"></i>
+            </div>
+            <div class="mt-3">
+              <p class="font-display text-sm font-bold">Daily Quiz</p>
+              <p class="text-[11px] text-zinc-600 dark:text-violet-200/70 mt-0.5">From read cards</p>
+            </div>
+          </button>
+
+          <!-- Progress / Read Counter Tile -->
+          <button id="bento-progress-tile" type="button" class="gpu-press col-span-1 glass-panel rounded-2xl p-4 text-left flex flex-col justify-between min-h-[124px] hover:border-violet-300/40 transition">
+            <div class="flex items-center justify-between w-full">
+              <span class="text-[11px] font-semibold uppercase tracking-wider text-zinc-600 dark:text-violet-200/70">Progress</span>
+              <i data-lucide="book-open" class="h-4 w-4 text-violet-300"></i>
+            </div>
+            <div class="mt-3">
+              <p class="font-display text-2xl font-bold leading-none"><span id="hero-read-count">0</span></p>
+              <p class="text-[11px] text-zinc-600 dark:text-violet-200/70 mt-1">Cards read</p>
+            </div>
+          </button>
+        </div>
+
+        <!-- Search -->
+        <div class="relative">
+          <i data-lucide="search" class="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-violet-300/70"></i>
+          <input id="explore-search" type="text" placeholder="Filter topics or concepts (e.g., Kubernetes, CAP, B+ Tree)..." class="glass-panel w-full rounded-xl pl-10 pr-4 py-2.5 text-sm placeholder:text-zinc-500 dark:placeholder:text-violet-200/50 focus:outline-none focus:border-violet-300/50 transition" />
+        </div>
+
+        <!-- Dynamic Categories + Colored Topic Carousels -->
+        <div id="dynamic-categories-container" class="space-y-6"></div>
+      </section>
+
+      <!-- VIEW 2: SWIPE FEED (Tactile Card Stack) -->
+      <section id="view-swipe" class="hidden h-full flex-col relative">
+        <div class="glass-panel z-20 flex items-center justify-between gap-2 border-x-0 border-t-0 px-4 sm:px-6 py-2.5">
+          <button id="btn-back-explore" type="button" class="gpu-press flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-semibold hover:bg-white/10 transition">
+            <i data-lucide="arrow-left" class="h-3.5 w-3.5"></i> Explore
+          </button>
+          <div id="feed-active-badge" class="truncate rounded-full bg-[#121216]/80 border border-violet-300/20 px-3 py-0.5 text-xs font-semibold text-violet-200">
+            Topic
+          </div>
+          <span id="feed-counter" class="text-xs font-mono font-medium text-violet-200/80">1 / 1</span>
+        </div>
+
+        <div class="relative flex-1 flex justify-center overflow-hidden">
+          <div id="card-deck-stage" class="w-full max-w-lg"></div>
+
+          <!-- Desktop Controls -->
+          <div class="hidden md:flex flex-col gap-2 absolute right-6 top-1/2 -translate-y-1/2 z-20">
+            <button id="btn-swipe-prev" type="button" class="gpu-press glass-panel flex h-10 w-10 items-center justify-center rounded-full hover:border-violet-300/50 transition" title="Previous Card">
+              <i data-lucide="chevron-up" class="h-5 w-5"></i>
+            </button>
+            <button id="btn-swipe-next" type="button" class="gpu-press glass-panel flex h-10 w-10 items-center justify-center rounded-full hover:border-violet-300/50 transition" title="Next Card">
+              <i data-lucide="chevron-down" class="h-5 w-5"></i>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 3: QUIZ HUB & RUNNER -->
+      <section id="view-quiz" class="view-enter hidden h-full overflow-y-auto no-scrollbar px-4 sm:px-6 pt-5 pb-24">
+        <div id="quiz-hub-screen" class="space-y-5">
+          <div>
+            <h2 class="font-display text-lg font-bold tracking-tight">Quiz Arena</h2>
+            <p class="text-xs text-zinc-600 dark:text-violet-200/75 mt-0.5">Daily Quiz tests strictly from cards you have already read.</p>
+          </div>
+
+          <div class="glass-panel flex items-center justify-between rounded-xl p-3.5">
+            <span class="text-xs font-semibold">Questions per session</span>
+            <div class="flex gap-1.5" id="quiz-length-pills">
+              <button type="button" data-qlen="3" class="qlen-btn rounded-lg px-3 py-1 text-xs font-bold bg-white/10">3 Qs</button>
+              <button type="button" data-qlen="5" class="qlen-btn rounded-lg px-3 py-1 text-xs font-bold bg-[#121216] text-violet-200 border border-violet-300/25">5 Qs</button>
+              <button type="button" data-qlen="10" class="qlen-btn rounded-lg px-3 py-1 text-xs font-bold bg-white/10">10 Qs</button>
+            </div>
+          </div>
+
+          <button id="btn-start-smart-quiz" type="button" class="gpu-press glass-panel w-full text-left rounded-2xl p-4 hover:border-violet-300/40 transition">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3.5">
+                <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-[#121216] text-violet-300 border border-violet-300/20">
+                  <i data-lucide="shuffle" class="h-5 w-5"></i>
+                </div>
+                <div>
+                  <h3 class="font-display text-sm font-bold">Daily Quiz (From Read Cards)</h3>
+                  <p class="text-xs text-zinc-600 dark:text-violet-200/70">Questions strictly from cards you have already read</p>
+                </div>
+              </div>
+              <i data-lucide="chevron-right" class="h-5 w-5 text-violet-300"></i>
+            </div>
+          </button>
+
+          <div>
+            <h3 class="text-xs font-bold uppercase tracking-wider text-zinc-600 dark:text-violet-200/70 mb-3">Quiz by Topic</h3>
+            <div id="quiz-topics-list" class="grid grid-cols-1 md:grid-cols-2 gap-2.5"></div>
+          </div>
+        </div>
+
+        <!-- Quiz Runner -->
+        <div id="quiz-runner-screen" class="hidden max-w-2xl mx-auto space-y-4">
+          <div class="flex items-center justify-between">
+            <button id="btn-quit-quiz" type="button" class="flex items-center gap-1 text-xs font-semibold text-violet-200/80 hover:text-white">
+              <i data-lucide="x" class="h-4 w-4"></i> Exit
+            </button>
+            <span id="quiz-progress-text" class="text-xs font-mono font-semibold text-violet-200">Q 1 / 5</span>
+          </div>
+
+          <div class="h-1.5 w-full overflow-hidden rounded-full bg-white/10">
+            <div id="quiz-progress-bar" class="h-full bg-gradient-to-r from-violet-400 to-fuchsia-300 transition-all duration-300" style="width: 20%"></div>
+          </div>
+
+          <div class="glass-soft-black rounded-2xl p-5">
+            <div class="flex items-center gap-2 mb-3">
+              <span id="quiz-q-topic" class="rounded-md bg-violet-500/20 px-2 py-0.5 text-[11px] font-semibold text-violet-200">Topic</span>
+              <span id="quiz-q-category" class="text-[11px] text-violet-200/60">Category</span>
+            </div>
+            <h3 id="quiz-q-text" class="font-display text-base font-bold leading-snug">Question</h3>
+            <div id="quiz-options-container" class="mt-4 space-y-2.5"></div>
+            <div id="quiz-explanation-box" class="hidden mt-4 rounded-xl border border-violet-300/15 bg-black/30 p-3.5 text-xs leading-relaxed">
+              <p id="quiz-explanation-title" class="font-bold mb-1"></p>
+              <p id="quiz-explanation-text" class="text-zinc-700 dark:text-violet-100/85"></p>
+            </div>
+          </div>
+
+          <button id="btn-next-question" type="button" class="gpu-press hidden w-full rounded-xl bg-[#121216] border border-violet-300/30 py-3 text-sm font-bold text-violet-100 hover:bg-violet-950 transition">
+            Next Question →
+          </button>
+        </div>
+
+        <!-- Quiz Results -->
+        <div id="quiz-results-screen" class="hidden max-w-xl mx-auto space-y-5 pt-2">
+          <div class="glass-soft-black rounded-2xl p-6 text-center">
+            <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500/15 text-emerald-400 mb-3">
+              <i data-lucide="award" class="h-6 w-6"></i>
+            </div>
+            <h2 class="font-display text-xl font-bold">Quiz Complete</h2>
+            <p class="text-xs text-violet-200/70 mt-1">Daily streak updated 🔥</p>
+            <div class="mt-5 flex items-center justify-center gap-8">
+              <div>
+                <p id="quiz-final-score" class="font-display text-3xl font-bold">4/5</p>
+                <p class="text-[11px] text-violet-200/60">Correct</p>
+              </div>
+              <div class="h-8 w-px bg-white/15"></div>
+              <div>
+                <p id="quiz-final-pct" class="font-display text-3xl font-bold text-emerald-400">80%</p>
+                <p class="text-[11px] text-violet-200/60">Accuracy</p>
+              </div>
+            </div>
+          </div>
+
+          <div id="quiz-weak-topics-box" class="hidden glass-panel rounded-2xl p-4 space-y-2">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-amber-300">Topics to Revisit</h3>
+            <div id="quiz-weak-topics-list" class="flex flex-wrap gap-2"></div>
+          </div>
+
+          <div class="flex gap-2.5">
+            <button id="btn-quiz-done" type="button" class="gpu-press glass-panel flex-1 rounded-xl py-3 text-xs font-bold">Back to Quiz Hub</button>
+            <button id="btn-quiz-retry" type="button" class="gpu-press flex-1 rounded-xl bg-[#121216] border border-violet-300/30 py-3 text-xs font-bold text-violet-100">Retake</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 4: SAVED LIBRARY (Bookmarks | Mastered | Read) -->
+      <section id="view-saved" class="view-enter hidden h-full overflow-y-auto no-scrollbar px-4 sm:px-6 pt-5 pb-24 space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <h2 class="font-display text-lg font-bold tracking-tight">Library</h2>
+          <div class="glass-panel flex rounded-xl p-1 text-xs font-semibold">
+            <button id="tab-saved-bookmarks" type="button" class="rounded-lg bg-[#121216] text-violet-200 px-3 py-1">Bookmarks</button>
+            <button id="tab-saved-mastered" type="button" class="rounded-lg px-3 py-1 text-zinc-600 dark:text-violet-200/70">Mastered</button>
+            <button id="tab-saved-read" type="button" class="rounded-lg px-3 py-1 text-zinc-600 dark:text-violet-200/70">Read</button>
+          </div>
+        </div>
+        <div id="saved-list-container" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+      </section>
+
+      <!-- VIEW 5: PROFILE & SYNC -->
+      <section id="view-profile" class="view-enter hidden h-full overflow-y-auto no-scrollbar px-4 sm:px-6 pt-5 pb-24 space-y-5 max-w-2xl mx-auto">
+        <h2 class="font-display text-lg font-bold tracking-tight">Profile &amp; Sync</h2>
+
+        <div class="glass-panel rounded-2xl p-4 space-y-3">
+          <div class="flex items-center gap-3">
+            <div id="profile-avatar" class="flex h-11 w-11 items-center justify-center rounded-full bg-[#121216] text-violet-300 font-bold text-base border border-violet-300/20">
+              G
+            </div>
+            <div class="min-w-0 flex-1">
+              <p id="profile-name" class="text-sm font-bold truncate">Guest Learner</p>
+              <p id="profile-email" class="text-xs text-zinc-600 dark:text-violet-200/70 truncate">Progress saved locally</p>
+            </div>
+          </div>
+
+          <button id="btn-google-signin" type="button" class="gpu-press w-full flex items-center justify-center gap-2.5 rounded-xl bg-[#121216] border border-violet-300/25 py-2.5 px-4 text-xs font-bold text-white hover:border-violet-300/50 transition">
+            <svg class="h-4 w-4" viewBox="0 0 24 24"><path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17Z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.11-6.72-4.96H1.29v3.14C3.26 21.3 7.31 24 12 24Z"/><path fill="#FBBC05" d="M5.28 14.24c-.24-.72-.38-1.49-.38-2.24s.14-1.52.38-2.24V6.62H1.29C.47 8.24 0 10.06 0 12s.47 3.76 1.29 5.38l3.99-3.14Z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.29 6.62l3.99 3.14c.95-2.85 3.6-4.96 6.72-4.96Z"/></svg>
+            <span id="google-btn-text">Continue with Google</span>
+          </button>
+        </div>
+
+        <div class="glass-panel rounded-2xl p-4 space-y-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="text-sm font-bold">7-Day Streak</h3>
+              <p class="text-[11px] text-zinc-600 dark:text-violet-200/70">Read 2+ cards or finish 1 quiz daily</p>
+            </div>
+            <span id="profile-longest-streak" class="text-xs font-bold text-amber-400">Best: 0d</span>
+          </div>
+          <div id="streak-calendar-strip" class="grid grid-cols-7 gap-1.5 text-center"></div>
+          <div class="grid grid-cols-3 gap-2 pt-2 border-t border-white/10 text-center">
+            <div>
+              <p id="stat-cards-read" class="font-display text-lg font-bold">0</p>
+              <p class="text-[10px] text-violet-200/60">Read Today</p>
+            </div>
+            <div>
+              <p id="stat-mastered" class="font-display text-lg font-bold text-emerald-400">0</p>
+              <p class="text-[10px] text-violet-200/60">Mastered</p>
+            </div>
+            <div>
+              <p id="stat-quizzes" class="font-display text-lg font-bold">0</p>
+              <p class="text-[10px] text-violet-200/60">Quizzes</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="glass-panel rounded-2xl divide-y divide-white/10">
+          <div class="flex items-center justify-between p-4">
+            <div class="flex items-center gap-2.5">
+              <i data-lucide="moon" class="h-4 w-4 text-violet-300"></i>
+              <span class="text-xs font-semibold">Dark Mode</span>
+            </div>
+            <button id="btn-toggle-theme" type="button" class="relative inline-flex h-6 w-11 items-center rounded-full bg-[#121216] border border-violet-300/30 transition">
+              <span id="theme-knob" class="inline-block h-4 w-4 translate-x-6 rounded-full bg-violet-300 transition"></span>
+            </button>
+          </div>
+          <button id="btn-open-import" type="button" class="w-full flex items-center justify-between p-4 text-left hover:bg-white/5 transition">
+            <div class="flex items-center gap-2.5">
+              <i data-lucide="upload" class="h-4 w-4 text-violet-300"></i>
+              <div>
+                <span class="text-xs font-semibold block">Test JSON Import</span>
+                <span class="text-[11px] text-zinc-500 dark:text-violet-200/60">Merge new cards.json batches locally</span>
+              </div>
+            </div>
+            <i data-lucide="chevron-right" class="h-4 w-4 text-violet-300/60"></i>
+          </button>
+          <button id="btn-reset-progress" type="button" class="w-full flex items-center justify-between p-4 text-left text-rose-400 hover:bg-rose-500/10 transition">
+            <div class="flex items-center gap-2.5">
+              <i data-lucide="trash-2" class="h-4 w-4"></i>
+              <span class="text-xs font-semibold">Reset Local Progress</span>
+            </div>
+          </button>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Bottom Navigation (4 Clean Tabs: Explore, Quiz, Saved, Profile) -->
+    <nav class="glass-panel absolute bottom-0 left-0 right-0 z-30 flex items-center justify-around border-x-0 border-b-0 px-2 py-2">
+      <button type="button" data-nav="explore" class="nav-btn gpu-press flex flex-col items-center gap-0.5 rounded-xl px-4 py-1 text-violet-600 dark:text-violet-200">
+        <i data-lucide="compass" class="h-5 w-5"></i>
+        <span class="text-[10px] font-bold">Explore</span>
+      </button>
+      <button type="button" data-nav="quiz" class="nav-btn gpu-press flex flex-col items-center gap-0.5 rounded-xl px-4 py-1 text-zinc-500 dark:text-violet-200/50 hover:text-violet-200">
+        <i data-lucide="brain-circuit" class="h-5 w-5"></i>
+        <span class="text-[10px] font-semibold">Quiz</span>
+      </button>
+      <button type="button" data-nav="saved" class="nav-btn gpu-press flex flex-col items-center gap-0.5 rounded-xl px-4 py-1 text-zinc-500 dark:text-violet-200/50 hover:text-violet-200">
+        <i data-lucide="bookmark" class="h-5 w-5"></i>
+        <span class="text-[10px] font-semibold">Saved</span>
+      </button>
+      <button type="button" data-nav="profile" class="nav-btn gpu-press flex flex-col items-center gap-0.5 rounded-xl px-4 py-1 text-zinc-500 dark:text-violet-200/50 hover:text-violet-200">
+        <i data-lucide="user" class="h-5 w-5"></i>
+        <span class="text-[10px] font-semibold">Profile</span>
+      </button>
+    </nav>
+
+    <!-- JSON Import Modal -->
+    <div id="modal-import" class="hidden fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+      <div class="glass-soft-black w-full max-w-md rounded-2xl p-5 space-y-4">
+        <div class="flex items-center justify-between">
+          <h3 class="font-display text-sm font-bold">Import Cards JSON</h3>
+          <button id="btn-close-import" type="button" class="rounded-lg p-1 text-violet-200/70 hover:bg-white/10">
+            <i data-lucide="x" class="h-4 w-4"></i>
+          </button>
+        </div>
+        <p class="text-xs text-violet-200/70">Paste a generated <code class="font-mono text-violet-300">cards.json</code> snippet or upload a file.</p>
+        <input id="input-import-file" type="file" accept=".json,application/json" class="block w-full text-xs text-violet-200/70 file:mr-3 file:rounded-lg file:border-0 file:bg-violet-500/20 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-violet-200" />
+        <textarea id="textarea-import-json" rows="5" placeholder='{"cards": [...], "quizzes": [...]}' class="w-full rounded-xl border border-violet-300/20 bg-black/40 p-3 font-mono text-xs text-violet-100 focus:border-violet-300/50 focus:outline-none"></textarea>
+        <label class="flex items-center gap-2 text-xs text-violet-200/80 cursor-pointer">
+          <input id="chk-replace-import" type="checkbox" checked class="rounded border-violet-300/30 bg-black/40 text-violet-500" />
+          <span>Replace existing library (Start Fresh)</span>
+        </label>
+        <button id="btn-confirm-import" type="button" class="gpu-press w-full rounded-xl bg-violet-500 py-2.5 text-xs font-bold text-white hover:bg-violet-400 transition">Apply JSON</button>
+      </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="pointer-events-none fixed bottom-20 left-1/2 z-50 -translate-x-1/2 translate-y-4 opacity-0 rounded-full bg-[#121216] border border-violet-300/25 px-4 py-2 text-xs font-semibold text-violet-100 shadow-lg transition-all duration-300">
+      Saved!
+    </div>
+  </div>
+
+  <script>
+    // =========================================================
+    // 1. DEFAULT DATA (Unchanged content)
+    // =========================================================
+    const DEFAULT_DATA = { cards: [], quizzes: [] };
+
+    // =========================================================
+    // 2. STATE & PERSISTENCE
+    // =========================================================
+    const STORAGE_KEY = "bytecards_fluid_v4";
+    function todayISO() { return new Date().toISOString().slice(0, 10); }
+    function yesterdayISO() { const d = new Date(); d.setDate(d.getDate() - 1); return d.toISOString().slice(0, 10); }
+
+    function loadState() {
+      const fallback = {
+        library: JSON.parse(JSON.stringify(DEFAULT_DATA)),
+        bookmarks: [],
+        mastered: [],
+        readCardIds: [],
+        readTodayIds: [],
+        lastActiveTopic: null,
+        topicCursor: {},
+        lastReadDate: todayISO(),
+        streak: { current: 0, longest: 0, completedDates: [] },
+        quizStats: { totalTaken: 0, byTopic: {} },
+        user: null,
+        theme: "dark"
+      };
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return fallback;
+        const parsed = JSON.parse(raw);
+        const merged = { ...fallback, ...parsed };
+        if (merged.lastReadDate !== todayISO()) {
+          merged.readTodayIds = [];
+          merged.lastReadDate = todayISO();
+          const lastCompleted = merged.streak.completedDates[merged.streak.completedDates.length - 1];
+          if (lastCompleted && lastCompleted !== todayISO() && lastCompleted !== yesterdayISO()) {
+            merged.streak.current = 0;
+          }
+        }
+        return merged;
+      } catch (e) { return fallback; }
+    }
+
+    function saveState() {
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {}
+    }
+
+    let state = loadState();
+    let activeView = "explore";
+    let activeTopicFilter = null;
+    let activeSavedTab = "bookmarks";
+    let selectedQuizLength = 5;
+    let currentQuizSession = null;
+    let deckCards = [];
+    let deckIndex = 0;
+    let syncStatus = "idle";
+    let syncErrorMsg = "";
+
+    // =========================================================
+    // 3. SPLASH SCREEN ("Ready to learn?")
+    // =========================================================
+    function dismissSplash() {
+      const splash = document.getElementById("splash-screen");
+      if (splash && !splash.classList.contains("splash-hide")) {
+        splash.classList.add("splash-hide");
+        setTimeout(() => splash.classList.add("hidden"), 560);
+      }
+    }
+    document.getElementById("btn-skip-splash").addEventListener("click", dismissSplash);
+    setTimeout(dismissSplash, 1650);
+
+    // =========================================================
+    // 4. HELPERS & DYNAMIC TOPIC COLORS + LOGOS
+    // =========================================================
+    let toastTimer = null;
+    function showToast(msg) {
+      const el = document.getElementById("toast");
+      el.textContent = msg;
+      el.classList.remove("translate-y-4", "opacity-0");
+      el.classList.add("translate-y-0", "opacity-100");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        el.classList.add("translate-y-4", "opacity-0");
+        el.classList.remove("translate-y-0", "opacity-100");
+      }, 2200);
+    }
+
+    function escapeHTML(str) {
+      return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+
+    const DYNAMIC_TOPIC_THEMES = [
+      { accent: "#38BDF8", tint: "rgba(56, 189, 248, 0.14)", bar: "bg-sky-400" },
+      { accent: "#34D399", tint: "rgba(52, 211, 153, 0.14)", bar: "bg-emerald-400" },
+      { accent: "#FBBF24", tint: "rgba(251, 191, 36, 0.14)", bar: "bg-amber-400" },
+      { accent: "#FB7185", tint: "rgba(251, 113, 133, 0.14)", bar: "bg-rose-400" },
+      { accent: "#A78BFA", tint: "rgba(167, 139, 250, 0.14)", bar: "bg-violet-400" },
+      { accent: "#22D3EE", tint: "rgba(34, 211, 238, 0.14)", bar: "bg-cyan-400" },
+      { accent: "#F97316", tint: "rgba(249, 115, 22, 0.14)", bar: "bg-orange-400" },
+      { accent: "#4ADE80", tint: "rgba(74, 222, 128, 0.14)", bar: "bg-green-400" },
+      { accent: "#E879F9", tint: "rgba(232, 121, 249, 0.14)", bar: "bg-fuchsia-400" },
+      { accent: "#60A5FA", tint: "rgba(96, 165, 250, 0.14)", bar: "bg-blue-400" }
+    ];
+
+    function getTopicTheme(topic, idx) {
+      if (typeof idx === "number") return DYNAMIC_TOPIC_THEMES[idx % DYNAMIC_TOPIC_THEMES.length];
+      let hash = 0;
+      for (let i = 0; i < topic.length; i++) hash = topic.charCodeAt(i) + ((hash << 5) - hash);
+      return DYNAMIC_TOPIC_THEMES[Math.abs(hash) % DYNAMIC_TOPIC_THEMES.length];
+    }
+
+    function getTopicLogo(topic) {
+      const t = (topic || "").toLowerCase();
+      if (t.includes("kubernetes") || t.includes("k8s")) {
+        return `<svg class="h-4 w-4 text-sky-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2"/><path d="M12 2v3M12 19v3M3.3 7l2.6 1.5M18.1 15.5l2.6 1.5M3.3 17l2.6-1.5M18.1 8.5l2.6-1.5"/></svg>`;
+      }
+      if (t.includes("docker")) {
+        return `<svg class="h-4 w-4 text-blue-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="4" y="10" width="3" height="3" rx="0.5"/><rect x="8" y="10" width="3" height="3" rx="0.5"/><rect x="12" y="10" width="3" height="3" rx="0.5"/><rect x="8" y="6" width="3" height="3" rx="0.5"/><rect x="12" y="6" width="3" height="3" rx="0.5"/><path d="M2 14h18c-.5 4-4 6-9 6s-8.5-2-9-6Z"/></svg>`;
+      }
+      if (t.includes("kafka")) {
+        return `<svg class="h-4 w-4 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="2.5"/><circle cx="12" cy="4.5" r="2"/><circle cx="18.5" cy="16" r="2"/><circle cx="5.5" cy="16" r="2"/><path d="M12 6.5v3M14.2 13.3l2.6 1.6M9.8 13.3l-2.6 1.6"/></svg>`;
+      }
+      if (t.includes("system")) return `<i data-lucide="network" class="h-4 w-4 text-emerald-400"></i>`;
+      if (t.includes("dsa")) return `<i data-lucide="git-branch" class="h-4 w-4 text-violet-300"></i>`;
+      if (t.includes("os")) return `<i data-lucide="cpu" class="h-4 w-4 text-rose-400"></i>`;
+      if (t.includes("dbms") || t.includes("sql")) return `<i data-lucide="database" class="h-4 w-4 text-cyan-400"></i>`;
+      if (t.includes("cach") || t.includes("redis")) return `<i data-lucide="zap" class="h-4 w-4 text-amber-400"></i>`;
+      if (t.includes("micro")) return `<i data-lucide="boxes" class="h-4 w-4 text-emerald-400"></i>`;
+      return `<i data-lucide="code-2" class="h-4 w-4 text-violet-300"></i>`;
+    }
+
+    // =========================================================
+    // 5. STREAK ENGINE (2+ Cards OR 1 Quiz)
+    // =========================================================
+    function markTodayComplete(reason) {
+      const today = todayISO();
+      if (!state.streak.completedDates.includes(today)) {
+        const hadYest = state.streak.completedDates.includes(yesterdayISO());
+        state.streak.current = hadYest ? state.streak.current + 1 : 1;
+        if (state.streak.current > state.streak.longest) state.streak.longest = state.streak.current;
+        state.streak.completedDates.push(today);
+        saveState();
+        updateStreakUI(true);
+        showToast(reason === "quiz" ? "Quiz complete! Streak extended 🔥" : "2 cards read! Streak extended 🔥");
+      }
+    }
+
+    function recordCardRead(cardId) {
+      let changed = false;
+      if (!state.readCardIds.includes(cardId)) {
+        state.readCardIds.push(cardId);
+        changed = true;
+      }
+      if (!state.readTodayIds.includes(cardId)) {
+        state.readTodayIds.push(cardId);
+        changed = true;
+        if (state.readTodayIds.length >= 2) markTodayComplete("cards");
+        else updateStreakUI(false);
+      }
+      if (changed) {
+        saveState();
+        const hc = document.getElementById("hero-read-count");
+        if (hc) hc.textContent = state.readCardIds.length;
+      }
+    }
+
+    function updateStreakUI(animate) {
+      const countEl = document.getElementById("streak-count");
+      const badgeEl = document.getElementById("streak-goal-badge");
+      const pillEl = document.getElementById("btn-streak-pill");
+      const todayDone = state.streak.completedDates.includes(todayISO());
+      const readCount = Math.min(state.readTodayIds.length, 2);
+
+      countEl.textContent = `${state.streak.current}d`;
+      if (todayDone) {
+        badgeEl.textContent = "✓";
+        badgeEl.className = "ml-0.5 rounded-full bg-amber-500 px-1.5 py-0.5 text-[10px] font-bold text-zinc-950";
+        pillEl.className = "gpu-press flex items-center gap-1.5 rounded-full bg-[#121216] border border-amber-400/45 px-2.5 py-1 text-xs font-semibold text-amber-300 transition";
+      } else {
+        badgeEl.textContent = `${readCount}/2`;
+        badgeEl.className = "ml-0.5 rounded-full bg-violet-500/25 px-1.5 py-0.5 text-[10px] font-bold text-violet-200";
+        pillEl.className = "gpu-press flex items-center gap-1.5 rounded-full bg-[#121216]/85 border border-violet-300/20 px-2.5 py-1 text-xs font-semibold text-violet-100 transition";
+      }
+      if (animate) {
+        pillEl.classList.add("animate-pop");
+        setTimeout(() => pillEl.classList.remove("animate-pop"), 400);
+      }
+    }
+
+    // =========================================================
+    // 6. NAVIGATION
+    // =========================================================
+    function switchView(viewName, startCardId = null) {
+      activeView = viewName;
+      ["explore", "swipe", "quiz", "saved", "profile"].forEach(v => {
+        const el = document.getElementById(`view-${v}`);
+        if (v === viewName) {
+          el.classList.remove("hidden");
+          if (v === "swipe") el.classList.add("flex");
+        } else {
+          el.classList.add("hidden");
+          el.classList.remove("flex");
+        }
+      });
+
+      document.querySelectorAll(".nav-btn").forEach(btn => {
+        const isTarget = btn.getAttribute("data-nav") === viewName;
+        btn.className = isTarget
+          ? "nav-btn gpu-press flex flex-col items-center gap-0.5 rounded-xl px-4 py-1 text-violet-600 dark:text-violet-200"
+          : "nav-btn gpu-press flex flex-col items-center gap-0.5 rounded-xl px-4 py-1 text-zinc-500 dark:text-violet-200/50 hover:text-violet-200";
+      });
+
+      if (viewName === "explore") renderExplore();
+      if (viewName === "swipe") initDeck(startCardId);
+      if (viewName === "quiz") renderQuizHub();
+      if (viewName === "saved") renderSaved();
+      if (viewName === "profile") renderProfile();
+    }
+
+    // =========================================================
+    // 7. EXPLORE VIEW (Conditional Bento + Dynamic Colored Topics)
+    // =========================================================
+    function renderExplore() {
+      const hc = document.getElementById("hero-read-count");
+      if (hc) hc.textContent = state.readCardIds.length;
+
+      // Conditional Continue Bento Block: ONLY show after user has read >= 1 card
+      const continueTile = document.getElementById("bento-continue-tile");
+      const quizTile = document.getElementById("btn-quick-quiz-hero");
+      const progTile = document.getElementById("bento-progress-tile");
+
+      if (state.readCardIds.length > 0 && state.lastActiveTopic) {
+        continueTile.classList.remove("hidden");
+        const cursorId = state.topicCursor[state.lastActiveTopic];
+        const card = state.library.cards.find(c => c.id === cursorId);
+        document.getElementById("bento-continue-topic").textContent = state.lastActiveTopic;
+        document.getElementById("bento-continue-title").textContent = card ? card.title : "Resume where you left off";
+        quizTile.className = "gpu-press col-span-1 glass-panel rounded-2xl p-4 text-left flex flex-col justify-between min-h-[124px] hover:border-violet-300/40 transition";
+        progTile.className = "gpu-press col-span-1 glass-panel rounded-2xl p-4 text-left flex flex-col justify-between min-h-[124px] hover:border-violet-300/40 transition";
+      } else {
+        continueTile.classList.add("hidden");
+        quizTile.className = "gpu-press col-span-1 md:col-span-2 glass-panel rounded-2xl p-4 text-left flex flex-col justify-between min-h-[124px] hover:border-violet-300/40 transition";
+        progTile.className = "gpu-press col-span-1 md:col-span-2 glass-panel rounded-2xl p-4 text-left flex flex-col justify-between min-h-[124px] hover:border-violet-300/40 transition";
+      }
+
+      const query = (document.getElementById("explore-search").value || "").trim().toLowerCase();
+      const container = document.getElementById("dynamic-categories-container");
+      const grouped = {};
+
+      state.library.cards.forEach(c => {
+        const matches = !query ||
+          c.topic.toLowerCase().includes(query) ||
+          c.category.toLowerCase().includes(query) ||
+          c.title.toLowerCase().includes(query) ||
+          c.summary.toLowerCase().includes(query);
+        if (!matches) return;
+        if (!grouped[c.category]) grouped[c.category] = {};
+        if (!grouped[c.category][c.topic]) grouped[c.category][c.topic] = [];
+        grouped[c.category][c.topic].push(c);
+      });
+
+      const categories = Object.keys(grouped);
+      if (categories.length === 0) {
+        if (state.library.cards.length === 0) {
+          if (syncStatus === "loading") {
+            container.innerHTML = `<div class="glass-panel rounded-2xl p-8 text-center text-xs text-violet-200/75">Loading topics from <code class="font-mono">cards.json</code>...</div>`;
+          } else {
+            const msg = syncErrorMsg || "No cards loaded yet. Make sure cards.json is valid JSON or import a file in Profile.";
+            container.innerHTML = `<div class="glass-panel rounded-2xl p-8 text-center space-y-3"><p class="text-xs text-violet-200/80">${escapeHTML(msg)}</p><button type="button" data-retry-sync="1" class="gpu-press rounded-xl bg-[#121216] border border-violet-300/30 px-4 py-2 text-xs font-bold text-violet-200">Retry Sync</button></div>`;
+          }
+        } else {
+          container.innerHTML = `<div class="glass-panel rounded-2xl p-8 text-center text-xs text-violet-200/60">No topics match "${escapeHTML(query)}".</div>`;
+        }
+        return;
+      }
+
+      let topicIdx = 0;
+      container.innerHTML = categories.map(cat => {
+        const topicsObj = grouped[cat];
+        const topicNames = Object.keys(topicsObj);
+        const tilesHTML = topicNames.map(topic => {
+          const list = topicsObj[topic];
+          const masteredCount = list.filter(i => state.mastered.includes(i.id)).length;
+          const pct = Math.round((masteredCount / list.length) * 100);
+          const theme = getTopicTheme(topic, topicIdx++);
+
+          return `
+            <button type="button" data-open-topic="${escapeHTML(topic)}" class="gpu-press shrink-0 w-44 sm:w-48 rounded-2xl glass-panel p-3.5 text-left relative overflow-hidden hover:border-white/25 transition" style="background: linear-gradient(145deg, ${theme.tint} 0%, rgba(16, 16, 22, 0.78) 68%);">
+              <div class="flex items-center justify-between mb-3">
+                <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-[#0B0B10]/90 border" style="border-color: ${theme.accent}44;">${getTopicLogo(topic)}</span>
+                <span class="text-[11px] font-mono text-zinc-500 dark:text-zinc-400">${list.length}c</span>
+              </div>
+              <p class="font-display text-sm font-bold truncate">${escapeHTML(topic)}</p>
+              <div class="mt-2.5 flex items-center gap-2">
+                <div class="h-1 flex-1 overflow-hidden rounded-full bg-black/30 dark:bg-white/10">
+                  <div class="h-full ${theme.bar} rounded-full" style="width: ${pct}%"></div>
+                </div>
+                <span class="text-[10px] font-mono text-zinc-500 dark:text-zinc-400">${masteredCount}/${list.length}</span>
+              </div>
+            </button>
+          `;
+        }).join("");
+
+        return `
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <h3 class="text-xs font-bold uppercase tracking-wider text-zinc-600 dark:text-violet-200/75">${escapeHTML(cat)}</h3>
+              <span class="text-[11px] text-zinc-500 dark:text-violet-200/50">${topicNames.length} topics</span>
+            </div>
+            <div class="flex gap-3 overflow-x-auto no-scrollbar pb-1">
+              ${tilesHTML}
+            </div>
+          </div>
+        `;
+      }).join("");
+
+      lucide.createIcons();
+    }
+
+    // =========================================================
+    // 8. EDITORIAL READING CARD & TACTILE SWIPE STACK
+    // =========================================================
+    function buildCardInnerHTML(card, isLast) {
+      const isBookmarked = state.bookmarks.includes(card.id);
+      const isMastered = state.mastered.includes(card.id);
+
+      const bulletsHTML = (card.bullets || []).map(b => `
+        <li class="flex items-start gap-2.5 text-[13.5px] text-zinc-700 dark:text-violet-100/85 leading-relaxed">
+          <span class="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-violet-400"></span>
+          <span>${escapeHTML(b)}</span>
+        </li>
+      `).join("");
+
+      const codeHTML = card.code ? `
+        <div class="mt-4 rounded-xl bg-[#121216] border border-violet-300/20 p-3.5 font-mono text-[11.5px] text-violet-200 leading-relaxed overflow-x-auto shadow-inner">
+          ${escapeHTML(card.code)}
+        </div>
+      ` : "";
+
+      return `
+        <div class="card-scroll-body glass-soft-black h-full flex flex-col justify-between rounded-3xl p-5 sm:p-6 overflow-y-auto no-scrollbar">
+          <div>
+            <div class="flex items-center justify-between gap-2 mb-4">
+              <div class="flex items-center gap-2">
+                <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-[#121216] border border-violet-300/20">${getTopicLogo(card.topic)}</span>
+                <div>
+                  <span class="text-xs font-bold block leading-none">${escapeHTML(card.topic)}</span>
+                  <span class="text-[10px] text-zinc-500 dark:text-violet-200/60">${escapeHTML(card.category)}</span>
+                </div>
+              </div>
+              ${card.difficulty ? `<span class="rounded-full bg-violet-500/20 border border-violet-300/25 px-2.5 py-0.5 text-[10px] font-bold text-violet-600 dark:text-violet-200">${escapeHTML(card.difficulty)}</span>` : ""}
+            </div>
+
+            <h2 class="font-display text-xl sm:text-2xl font-bold tracking-tight leading-snug">
+              ${escapeHTML(card.title)}
+            </h2>
+
+            <p class="mt-3.5 text-[14.5px] text-zinc-700 dark:text-zinc-200 leading-[1.65] whitespace-pre-line">
+              ${escapeHTML(card.summary)}
+            </p>
+
+            ${bulletsHTML ? `<div class="mt-4 pt-3.5 border-t border-white/10"><ul class="space-y-2.5">${bulletsHTML}</ul></div>` : ""}
+            ${codeHTML}
+          </div>
+
+          <div class="mt-5 pt-3.5 border-t border-white/10 flex items-center justify-between gap-2">
+            <div class="flex items-center gap-2">
+              <button type="button" data-toggle-bookmark="${escapeHTML(card.id)}" class="gpu-press flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-semibold transition ${isBookmarked ? "border-violet-400/50 bg-violet-500/20 text-violet-200" : "border-white/15 bg-white/5 text-zinc-600 dark:text-violet-100/80 hover:bg-white/10"}">
+                <i data-lucide="bookmark" class="h-3.5 w-3.5 ${isBookmarked ? "fill-current" : ""}"></i>
+                <span>${isBookmarked ? "Saved" : "Save"}</span>
+              </button>
+              <button type="button" data-toggle-mastered="${escapeHTML(card.id)}" class="gpu-press flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-semibold transition ${isMastered ? "border-emerald-400/50 bg-emerald-500/20 text-emerald-300" : "border-white/15 bg-white/5 text-zinc-600 dark:text-violet-100/80 hover:bg-white/10"}">
+                <i data-lucide="check-circle-2" class="h-3.5 w-3.5"></i>
+                <span>${isMastered ? "Mastered" : "Done"}</span>
+              </button>
+            </div>
+            <span class="text-[11px] font-medium text-violet-200/60 flex items-center gap-1">
+              ${isLast ? "End of topic" : 'Swipe up <i data-lucide="arrow-up" class="h-3 w-3"></i>'}
+            </span>
+          </div>
+        </div>
+      `;
+    }
+
+    function initDeck(startCardId = null) {
+      deckCards = activeTopicFilter
+        ? state.library.cards.filter(c => c.topic === activeTopicFilter)
+        : state.library.cards;
+
+      document.getElementById("feed-active-badge").textContent = activeTopicFilter || "Topic";
+
+      if (deckCards.length === 0) {
+        deckIndex = 0;
+        renderDeckStack();
+        return;
+      }
+
+      if (startCardId) {
+        const idx = deckCards.findIndex(c => c.id === startCardId);
+        deckIndex = idx >= 0 ? idx : 0;
+      } else if (activeTopicFilter && state.topicCursor[activeTopicFilter]) {
+        const savedId = state.topicCursor[activeTopicFilter];
+        const idx = deckCards.findIndex(c => c.id === savedId);
+        if (idx >= 0 && !state.mastered.includes(savedId)) {
+          deckIndex = idx;
+        } else {
+          const firstUnmastered = deckCards.findIndex(c => !state.mastered.includes(c.id));
+          deckIndex = firstUnmastered >= 0 ? firstUnmastered : 0;
+        }
+      } else {
+        const firstUnmastered = deckCards.findIndex(c => !state.mastered.includes(c.id));
+        deckIndex = firstUnmastered >= 0 ? firstUnmastered : 0;
+      }
+
+      renderDeckStack();
+    }
+
+    function renderDeckStack() {
+      const stage = document.getElementById("card-deck-stage");
+      const counter = document.getElementById("feed-counter");
+
+      if (deckCards.length === 0) {
+        counter.textContent = "0 / 0";
+        stage.innerHTML = `<div class="flex h-full items-center justify-center p-8 text-center text-sm text-violet-200/60">No cards here yet.</div>`;
+        return;
+      }
+
+      counter.textContent = `${deckIndex + 1} / ${deckCards.length}`;
+      const currentCard = deckCards[deckIndex];
+      recordCardRead(currentCard.id);
+      if (activeTopicFilter) {
+        state.lastActiveTopic = activeTopicFilter;
+        state.topicCursor[activeTopicFilter] = currentCard.id;
+        saveState();
+      }
+
+      let html = "";
+      if (deckIndex > 0) {
+        html += `<article id="deck-prev" class="deck-card" style="transform: translateY(-115%) scale(0.94); opacity: 0; z-index: 30;">${buildCardInnerHTML(deckCards[deckIndex - 1], false)}</article>`;
+      }
+      html += `<article id="deck-curr" class="deck-card" style="transform: translateY(0%) scale(1); opacity: 1; z-index: 20;">${buildCardInnerHTML(currentCard, deckIndex === deckCards.length - 1)}</article>`;
+      if (deckIndex < deckCards.length - 1) {
+        html += `<article id="deck-next" class="deck-card" style="transform: translateY(102%) scale(0.96); opacity: 0.65; z-index: 10;">${buildCardInnerHTML(deckCards[deckIndex + 1], deckIndex + 1 === deckCards.length - 1)}</article>`;
+      }
+
+      stage.innerHTML = html;
+      lucide.createIcons();
+    }
+
+    function goNextCard() {
+      if (deckIndex >= deckCards.length - 1) { showToast("Reached end of topic!"); return; }
+      const curr = document.getElementById("deck-curr");
+      const next = document.getElementById("deck-next");
+      if (curr) { curr.style.transform = "translateY(-112%) scale(0.92)"; curr.style.opacity = "0"; }
+      if (next) { next.style.transform = "translateY(0%) scale(1)"; next.style.opacity = "1"; }
+      setTimeout(() => { deckIndex++; renderDeckStack(); }, 280);
+    }
+
+    function goPrevCard() {
+      if (deckIndex <= 0) { showToast("First card"); return; }
+      const prev = document.getElementById("deck-prev");
+      const curr = document.getElementById("deck-curr");
+      if (prev) { prev.style.transform = "translateY(0%) scale(1)"; prev.style.opacity = "1"; }
+      if (curr) { curr.style.transform = "translateY(104%) scale(0.96)"; curr.style.opacity = "0.5"; }
+      setTimeout(() => { deckIndex--; renderDeckStack(); }, 280);
+    }
+
+    let dragStartY = 0, dragDeltaY = 0, isDragging = false, swipeEngaged = false;
+    let startAtTop = true, startAtBottom = true, isCardScrollable = false;
+    const stageEl = document.getElementById("card-deck-stage");
+
+    function beginDrag(clientY, target) {
+      if (target.closest("button")) return;
+      const scrollEl = document.querySelector("#deck-curr .card-scroll-body");
+      if (scrollEl) {
+        isCardScrollable = scrollEl.scrollHeight > scrollEl.clientHeight + 4;
+        startAtTop = scrollEl.scrollTop <= 2;
+        startAtBottom = scrollEl.scrollTop + scrollEl.clientHeight >= scrollEl.scrollHeight - 2;
+      } else {
+        isCardScrollable = false; startAtTop = true; startAtBottom = true;
+      }
+      isDragging = true;
+      swipeEngaged = false;
+      dragStartY = clientY;
+      dragDeltaY = 0;
+    }
+
+    function moveDrag(clientY, preventDefaultFn) {
+      if (!isDragging) return;
+      const rawDelta = clientY - dragStartY;
+      if (Math.abs(rawDelta) < 8) return;
+
+      // Smart scroll-boundary check: let long cards scroll internally before swiping
+      if (!swipeEngaged && isCardScrollable) {
+        if (rawDelta < 0 && !startAtBottom) { isDragging = false; return; }
+        if (rawDelta > 0 && !startAtTop) { isDragging = false; return; }
+      }
+
+      if (!swipeEngaged) {
+        swipeEngaged = true;
+        ["deck-curr", "deck-next", "deck-prev"].forEach(id => {
+          const el = document.getElementById(id); if (el) el.classList.add("dragging");
+        });
+      }
+      if (preventDefaultFn) preventDefaultFn();
+
+      dragDeltaY = rawDelta;
+      const curr = document.getElementById("deck-curr");
+      const next = document.getElementById("deck-next");
+      const prev = document.getElementById("deck-prev");
+      const h = stageEl.clientHeight || 500;
+      const progress = Math.min(Math.abs(dragDeltaY) / h, 1);
+
+      if (dragDeltaY < 0 && deckIndex < deckCards.length - 1) {
+        if (curr) { curr.style.transform = `translateY(${dragDeltaY}px) scale(${1 - progress * 0.06})`; curr.style.opacity = String(1 - progress * 0.5); }
+        if (next) { next.style.transform = `translateY(${102 - progress * 102}%) scale(${0.96 + progress * 0.04})`; next.style.opacity = String(0.65 + progress * 0.35); }
+      } else if (dragDeltaY > 0 && deckIndex > 0) {
+        if (prev) { prev.style.transform = `translateY(${-115 + progress * 115}%) scale(${0.94 + progress * 0.06})`; prev.style.opacity = String(progress); }
+        if (curr) { curr.style.transform = `translateY(${dragDeltaY * 0.4}px) scale(${1 - progress * 0.04})`; }
+      }
+    }
+
+    function endDrag() {
+      if (!isDragging) return;
+      isDragging = false;
+      if (!swipeEngaged) { dragDeltaY = 0; return; }
+      swipeEngaged = false;
+      const curr = document.getElementById("deck-curr");
+      const next = document.getElementById("deck-next");
+      const prev = document.getElementById("deck-prev");
+      [curr, next, prev].forEach(el => { if (el) el.classList.remove("dragging"); });
+
+      if (dragDeltaY < -65 && deckIndex < deckCards.length - 1) goNextCard();
+      else if (dragDeltaY > 65 && deckIndex > 0) goPrevCard();
+      else {
+        if (curr) { curr.style.transform = "translateY(0%) scale(1)"; curr.style.opacity = "1"; }
+        if (next) { next.style.transform = "translateY(102%) scale(0.96)"; next.style.opacity = "0.65"; }
+        if (prev) { prev.style.transform = "translateY(-115%) scale(0.94)"; prev.style.opacity = "0"; }
+      }
+      dragDeltaY = 0;
+    }
+
+    stageEl.addEventListener("touchstart", (e) => { if (e.touches[0]) beginDrag(e.touches[0].clientY, e.target); }, { passive: true });
+    stageEl.addEventListener("touchmove", (e) => { if (e.touches[0]) moveDrag(e.touches[0].clientY, () => e.preventDefault()); }, { passive: false });
+    stageEl.addEventListener("touchend", endDrag, { passive: true });
+    stageEl.addEventListener("touchcancel", endDrag, { passive: true });
+
+    // =========================================================
+    // 9. QUIZ HUB & RUNNER
+    // =========================================================
+    function renderQuizHub() {
+      document.getElementById("quiz-hub-screen").classList.remove("hidden");
+      document.getElementById("quiz-runner-screen").classList.add("hidden");
+      document.getElementById("quiz-results-screen").classList.add("hidden");
+
+      const listEl = document.getElementById("quiz-topics-list");
+      const topicCounts = {};
+      state.library.quizzes.forEach(q => {
+        if (!topicCounts[q.topic]) topicCounts[q.topic] = { count: 0, category: q.category };
+        topicCounts[q.topic].count++;
+      });
+
+      listEl.innerHTML = Object.keys(topicCounts).map(t => {
+        const info = topicCounts[t];
+        const stats = state.quizStats.byTopic[t];
+        const acc = stats && stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : null;
+        return `
+          <button type="button" data-start-topic-quiz="${escapeHTML(t)}" class="gpu-press glass-panel w-full flex items-center justify-between rounded-2xl p-3.5 text-left hover:border-violet-300/40 transition">
+            <div class="flex items-center gap-3 min-w-0">
+              <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#121216] border border-white/10">${getTopicLogo(t)}</div>
+              <div class="min-w-0">
+                <p class="font-display text-sm font-bold truncate">${escapeHTML(t)}</p>
+                <p class="text-[11px] text-zinc-500 dark:text-violet-200/60 truncate">${escapeHTML(info.category)} · ${info.count} Qs</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              ${acc !== null ? `<span class="rounded-lg bg-emerald-500/15 px-2 py-0.5 text-[11px] font-bold text-emerald-400">${acc}%</span>` : ""}
+              <i data-lucide="play" class="h-4 w-4 text-violet-300"></i>
+            </div>
+          </button>
+        `;
+      }).join("");
+      lucide.createIcons();
+    }
+
+    function startQuiz(topicFilter) {
+      let pool;
+      if (topicFilter) {
+        pool = state.library.quizzes.filter(q => q.topic === topicFilter);
+      } else {
+        const readSet = new Set(state.readCardIds);
+        const readTopics = new Set(state.library.cards.filter(c => readSet.has(c.id)).map(c => c.topic));
+        pool = state.library.quizzes.filter(q => q.relatedCardId ? readSet.has(q.relatedCardId) : readTopics.has(q.topic));
+        if (pool.length === 0) {
+          showToast("Read at least 1 card first to unlock your Daily Quiz!");
+          return;
+        }
+      }
+      if (pool.length === 0) { showToast("No quiz questions yet."); return; }
+
+      pool = pool.sort(() => Math.random() - 0.5).slice(0, selectedQuizLength);
+      currentQuizSession = { topicFilter, questions: pool, index: 0, score: 0, answered: false, missedTopics: new Set() };
+
+      document.getElementById("quiz-hub-screen").classList.add("hidden");
+      document.getElementById("quiz-results-screen").classList.add("hidden");
+      document.getElementById("quiz-runner-screen").classList.remove("hidden");
+      renderQuizQuestion();
+    }
+
+    function renderQuizQuestion() {
+      const s = currentQuizSession;
+      const q = s.questions[s.index];
+      document.getElementById("quiz-progress-text").textContent = `Q ${s.index + 1} / ${s.questions.length}`;
+      document.getElementById("quiz-progress-bar").style.width = `${((s.index + 1) / s.questions.length) * 100}%`;
+      document.getElementById("quiz-q-topic").textContent = q.topic;
+      document.getElementById("quiz-q-category").textContent = q.category;
+      document.getElementById("quiz-q-text").textContent = q.question;
+      document.getElementById("quiz-explanation-box").classList.add("hidden");
+      document.getElementById("btn-next-question").classList.add("hidden");
+      s.answered = false;
+
+      document.getElementById("quiz-options-container").innerHTML = q.options.map((opt, idx) => `
+        <button type="button" data-quiz-option="${idx}" class="quiz-opt-btn gpu-press w-full rounded-xl border border-white/15 bg-white/5 p-3.5 text-left text-xs sm:text-sm font-medium hover:border-violet-300/50 transition flex items-center gap-3">
+          <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-[#121216] border border-white/10 text-[11px] font-bold text-violet-200">${String.fromCharCode(65 + idx)}</span>
+          <span>${escapeHTML(opt)}</span>
+        </button>
+      `).join("");
+    }
+
+    function handleQuizAnswer(chosenIdx) {
+      const s = currentQuizSession;
+      if (s.answered) return;
+      s.answered = true;
+      const q = s.questions[s.index];
+      const isCorrect = chosenIdx === q.answerIndex;
+      if (isCorrect) s.score++; else s.missedTopics.add(q.topic);
+
+      if (!state.quizStats.byTopic[q.topic]) state.quizStats.byTopic[q.topic] = { correct: 0, total: 0 };
+      state.quizStats.byTopic[q.topic].total++;
+      if (isCorrect) state.quizStats.byTopic[q.topic].correct++;
+      saveState();
+
+      document.querySelectorAll(".quiz-opt-btn").forEach((btn, idx) => {
+        btn.disabled = true;
+        if (idx === q.answerIndex) btn.classList.add("border-emerald-400", "bg-emerald-500/15", "text-emerald-300");
+        else if (idx === chosenIdx && !isCorrect) btn.classList.add("border-rose-400", "bg-rose-500/15", "text-rose-300");
+        else btn.classList.add("opacity-45");
+      });
+
+      const expTitle = document.getElementById("quiz-explanation-title");
+      expTitle.textContent = isCorrect ? "✓ Correct" : "✕ Incorrect";
+      expTitle.className = isCorrect ? "font-bold mb-1 text-emerald-400" : "font-bold mb-1 text-rose-400";
+      document.getElementById("quiz-explanation-text").textContent = q.explanation;
+      document.getElementById("quiz-explanation-box").classList.remove("hidden");
+
+      const nextBtn = document.getElementById("btn-next-question");
+      nextBtn.textContent = s.index + 1 < s.questions.length ? "Next Question →" : "See Scorecard →";
+      nextBtn.classList.remove("hidden");
+    }
+
+    function finishQuiz() {
+      const s = currentQuizSession;
+      state.quizStats.totalTaken++;
+      saveState();
+      markTodayComplete("quiz");
+
+      document.getElementById("quiz-runner-screen").classList.add("hidden");
+      document.getElementById("quiz-results-screen").classList.remove("hidden");
+      document.getElementById("quiz-final-score").textContent = `${s.score}/${s.questions.length}`;
+      document.getElementById("quiz-final-pct").textContent = `${Math.round((s.score / s.questions.length) * 100)}%`;
+
+      const weakBox = document.getElementById("quiz-weak-topics-box");
+      const weakList = document.getElementById("quiz-weak-topics-list");
+      if (s.missedTopics.size > 0) {
+        weakBox.classList.remove("hidden");
+        weakList.innerHTML = Array.from(s.missedTopics).map(t => `
+          <button type="button" data-open-topic="${escapeHTML(t)}" class="rounded-lg bg-amber-500/20 px-3 py-1.5 text-xs font-bold text-amber-300 hover:bg-amber-500/30 transition">
+            Review ${escapeHTML(t)} →
+          </button>
+        `).join("");
+      } else {
+        weakBox.classList.add("hidden");
+      }
+    }
+
+    // =========================================================
+    // 10. SAVED & PROFILE VIEWS
+    // =========================================================
+    function renderSaved() {
+      const container = document.getElementById("saved-list-container");
+      const ids = activeSavedTab === "bookmarks" ? state.bookmarks : (activeSavedTab === "mastered" ? state.mastered : state.readCardIds);
+      const items = state.library.cards.filter(c => ids.includes(c.id));
+
+      if (items.length === 0) {
+        container.innerHTML = `<div class="col-span-full glass-panel rounded-2xl p-8 text-center text-xs text-violet-200/60">No ${activeSavedTab} cards yet.</div>`;
+        return;
+      }
+
+      container.innerHTML = items.map(c => `
+        <button type="button" data-jump-card="${escapeHTML(c.id)}" class="gpu-press glass-panel w-full text-left rounded-2xl p-4 hover:border-violet-300/40 transition">
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="flex items-center gap-1.5 text-[11px] font-bold">${getTopicLogo(c.topic)} ${escapeHTML(c.topic)}</span>
+            <span class="text-[10px] text-violet-200/50">${escapeHTML(c.category)}</span>
+          </div>
+          <h4 class="font-display text-sm font-bold">${escapeHTML(c.title)}</h4>
+          <p class="text-xs text-zinc-600 dark:text-violet-100/70 line-clamp-2 mt-1">${escapeHTML(c.summary)}</p>
+        </button>
+      `).join("");
+      lucide.createIcons();
+    }
+
+    function renderProfile() {
+      const avatar = document.getElementById("profile-avatar");
+      const nameEl = document.getElementById("profile-name");
+      const emailEl = document.getElementById("profile-email");
+      const btnText = document.getElementById("google-btn-text");
+
+      if (state.user) {
+        avatar.textContent = state.user.name.charAt(0).toUpperCase();
+        nameEl.textContent = state.user.name;
+        emailEl.textContent = state.user.email + " · Synced";
+        btnText.textContent = "Sign out of Google";
+      } else {
+        avatar.textContent = "G";
+        nameEl.textContent = "Guest Learner";
+        emailEl.textContent = "Progress saved locally";
+        btnText.textContent = "Continue with Google";
+      }
+
+      document.getElementById("profile-longest-streak").textContent = `Best: ${state.streak.longest}d`;
+      document.getElementById("stat-cards-read").textContent = state.readTodayIds.length;
+      document.getElementById("stat-mastered").textContent = state.mastered.length;
+      document.getElementById("stat-quizzes").textContent = state.quizStats.totalTaken;
+
+      const strip = document.getElementById("streak-calendar-strip");
+      const days = [];
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        const iso = d.toISOString().slice(0, 10);
+        const label = d.toLocaleDateString("en-US", { weekday: "short" }).slice(0, 2);
+        const done = state.streak.completedDates.includes(iso);
+        days.push(`
+          <div class="flex flex-col items-center gap-1">
+            <span class="text-[10px] font-medium text-violet-200/60">${label}</span>
+            <div class="flex h-8 w-8 items-center justify-center rounded-xl text-xs font-bold ${done ? "bg-amber-500 text-zinc-950" : "bg-[#121216]/70 border border-white/10 text-violet-200/50"}">
+              ${done ? "🔥" : d.getDate()}
+            </div>
+          </div>
+        `);
+      }
+      strip.innerHTML = days.join("");
+    }
+
+    // =========================================================
+    // 11. EVENT LISTENERS
+    // =========================================================
+    document.addEventListener("click", (e) => {
+      const navBtn = e.target.closest("[data-nav]");
+      if (navBtn) {
+        switchView(navBtn.getAttribute("data-nav"));
+        return;
+      }
+
+      const topicBtn = e.target.closest("[data-open-topic]");
+      if (topicBtn) {
+        activeTopicFilter = topicBtn.getAttribute("data-open-topic");
+        switchView("swipe");
+        return;
+      }
+
+      const jumpCard = e.target.closest("[data-jump-card]");
+      if (jumpCard) {
+        const cardId = jumpCard.getAttribute("data-jump-card");
+        const card = state.library.cards.find(c => c.id === cardId);
+        activeTopicFilter = card ? card.topic : null;
+        switchView("swipe", cardId);
+        return;
+      }
+
+      const bmBtn = e.target.closest("[data-toggle-bookmark]");
+      if (bmBtn) {
+        const id = bmBtn.getAttribute("data-toggle-bookmark");
+        if (state.bookmarks.includes(id)) { state.bookmarks = state.bookmarks.filter(x => x !== id); showToast("Removed bookmark"); }
+        else { state.bookmarks.push(id); showToast("Bookmarked"); }
+        saveState(); renderDeckStack(); return;
+      }
+
+      const mastBtn = e.target.closest("[data-toggle-mastered]");
+      if (mastBtn) {
+        const id = mastBtn.getAttribute("data-toggle-mastered");
+        if (state.mastered.includes(id)) { state.mastered = state.mastered.filter(x => x !== id); showToast("Unmarked"); }
+        else { state.mastered.push(id); showToast("Marked Done ✓"); }
+        saveState(); renderDeckStack(); return;
+      }
+
+      const qlenBtn = e.target.closest("[data-qlen]");
+      if (qlenBtn) {
+        selectedQuizLength = Number(qlenBtn.getAttribute("data-qlen"));
+        document.querySelectorAll(".qlen-btn").forEach(b => {
+          const active = Number(b.getAttribute("data-qlen")) === selectedQuizLength;
+          b.className = active
+            ? "qlen-btn rounded-lg px-3 py-1 text-xs font-bold bg-[#121216] text-violet-200 border border-violet-300/25"
+            : "qlen-btn rounded-lg px-3 py-1 text-xs font-bold bg-white/10";
+        });
+        return;
+      }
+
+      const startTopicQuiz = e.target.closest("[data-start-topic-quiz]");
+      if (startTopicQuiz) { startQuiz(startTopicQuiz.getAttribute("data-start-topic-quiz")); return; }
+
+      const retryBtn = e.target.closest("[data-retry-sync]");
+      if (retryBtn) { if (typeof syncRemoteCards === "function") syncRemoteCards(); return; }
+
+      const quizOpt = e.target.closest("[data-quiz-option]");
+      if (quizOpt) { handleQuizAnswer(Number(quizOpt.getAttribute("data-quiz-option"))); return; }
+    });
+
+    document.getElementById("bento-continue-tile").addEventListener("click", () => {
+      if (state.lastActiveTopic) {
+        activeTopicFilter = state.lastActiveTopic;
+        switchView("swipe");
+      }
+    });
+    document.getElementById("bento-progress-tile").addEventListener("click", () => {
+      switchView("saved");
+      setSavedTab("read");
+    });
+
+    document.getElementById("btn-swipe-prev").addEventListener("click", goPrevCard);
+    document.getElementById("btn-swipe-next").addEventListener("click", goNextCard);
+    document.addEventListener("keydown", (e) => {
+      if (activeView !== "swipe") return;
+      if (e.key === "ArrowDown") { e.preventDefault(); goNextCard(); }
+      if (e.key === "ArrowUp") { e.preventDefault(); goPrevCard(); }
+    });
+
+    document.getElementById("btn-quick-quiz-hero").addEventListener("click", () => { switchView("quiz"); startQuiz(null); });
+    document.getElementById("btn-back-explore").addEventListener("click", () => switchView("explore"));
+    document.getElementById("btn-header-auth").addEventListener("click", () => switchView("profile"));
+    document.getElementById("btn-streak-pill").addEventListener("click", () => switchView("profile"));
+    document.getElementById("explore-search").addEventListener("input", renderExplore);
+
+    document.getElementById("btn-start-smart-quiz").addEventListener("click", () => startQuiz(null));
+    document.getElementById("btn-quit-quiz").addEventListener("click", renderQuizHub);
+    document.getElementById("btn-quiz-done").addEventListener("click", renderQuizHub);
+    document.getElementById("btn-quiz-retry").addEventListener("click", () => startQuiz(currentQuizSession ? currentQuizSession.topicFilter : null));
+
+    document.getElementById("btn-next-question").addEventListener("click", () => {
+      currentQuizSession.index++;
+      if (currentQuizSession.index < currentQuizSession.questions.length) renderQuizQuestion();
+      else finishQuiz();
+    });
+
+    function setSavedTab(tab) {
+      activeSavedTab = tab;
+      ["bookmarks", "mastered", "read"].forEach(t => {
+        const el = document.getElementById(`tab-saved-${t}`);
+        el.className = t === tab ? "rounded-lg bg-[#121216] text-violet-200 px-3 py-1" : "rounded-lg px-3 py-1 text-zinc-600 dark:text-violet-200/70";
+      });
+      renderSaved();
+    }
+    document.getElementById("tab-saved-bookmarks").addEventListener("click", () => setSavedTab("bookmarks"));
+    document.getElementById("tab-saved-mastered").addEventListener("click", () => setSavedTab("mastered"));
+    document.getElementById("tab-saved-read").addEventListener("click", () => setSavedTab("read"));
+
+    document.getElementById("btn-google-signin").addEventListener("click", () => {
+      if (state.user) { state.user = null; showToast("Signed out"); }
+      else { state.user = { name: "Alex Dev", email: "alex.dev@gmail.com" }; showToast("Signed in with Google ✓"); }
+      saveState(); renderProfile();
+    });
+
+    function applyTheme() {
+      const html = document.documentElement;
+      const knob = document.getElementById("theme-knob");
+      if (state.theme === "dark") { html.classList.add("dark"); knob.classList.add("translate-x-6"); knob.classList.remove("translate-x-1"); }
+      else { html.classList.remove("dark"); knob.classList.remove("translate-x-6"); knob.classList.add("translate-x-1"); }
+    }
+    document.getElementById("btn-toggle-theme").addEventListener("click", () => {
+      state.theme = state.theme === "dark" ? "light" : "dark";
+      saveState(); applyTheme();
+    });
+
+    document.getElementById("btn-open-import").addEventListener("click", () => document.getElementById("modal-import").classList.remove("hidden"));
+    document.getElementById("btn-close-import").addEventListener("click", () => document.getElementById("modal-import").classList.add("hidden"));
+    document.getElementById("input-import-file").addEventListener("change", (e) => {
+      const file = e.target.files[0]; if (!file) return;
+      const r = new FileReader(); r.onload = (ev) => { document.getElementById("textarea-import-json").value = ev.target.result; }; r.readAsText(file);
+    });
+    document.getElementById("btn-confirm-import").addEventListener("click", () => {
+      try {
+        const data = JSON.parse(document.getElementById("textarea-import-json").value.trim());
+        const replace = document.getElementById("chk-replace-import").checked;
+        if (replace) {
+          state.library = {
+            cards: Array.isArray(data.cards) ? data.cards : [],
+            quizzes: Array.isArray(data.quizzes) ? data.quizzes : []
+          };
+          saveState(); document.getElementById("modal-import").classList.add("hidden");
+          showToast(`Loaded ${state.library.cards.length} cards fresh!`); switchView("explore");
+        } else {
+          let addedCards = 0, addedQuizzes = 0;
+          if (Array.isArray(data.cards)) {
+            const ids = new Set(state.library.cards.map(c => c.id));
+            data.cards.forEach(c => { if (c.id && !ids.has(c.id)) { state.library.cards.push(c); addedCards++; } });
+          }
+          if (Array.isArray(data.quizzes)) {
+            const qids = new Set(state.library.quizzes.map(q => q.id));
+            data.quizzes.forEach(q => { if (q.id && !qids.has(q.id)) { state.library.quizzes.push(q); addedQuizzes++; } });
+          }
+          saveState(); document.getElementById("modal-import").classList.add("hidden");
+          showToast(`Merged ${addedCards} cards & ${addedQuizzes} quizzes!`); switchView("explore");
+        }
+      } catch (err) { showToast("Invalid JSON"); }
+    });
+
+    document.getElementById("btn-reset-progress").addEventListener("click", () => {
+      state.bookmarks = []; state.mastered = []; state.readCardIds = []; state.readTodayIds = [];
+      state.lastActiveTopic = null; state.topicCursor = {};
+      state.streak = { current: 0, longest: 0, completedDates: [] }; state.quizStats = { totalTaken: 0, byTopic: {} };
+      saveState(); updateStreakUI(false); renderProfile(); showToast("Local progress reset");
+    });
+
+    // Init
+    applyTheme();
+    updateStreakUI(false);
+    renderExplore();
+    lucide.createIcons();
+
+    const FIREBASE_CONFIG = { apiKey: "", authDomain: "", projectId: "" };
+    let deferredInstallPrompt = null;
+    const installBtn = document.getElementById("btn-install-pwa");
+    window.addEventListener("beforeinstallprompt", (e) => {
+      e.preventDefault(); deferredInstallPrompt = e;
+      if (installBtn) { installBtn.classList.remove("hidden"); installBtn.classList.add("flex"); }
+    });
+    if (installBtn) {
+      installBtn.addEventListener("click", async () => {
+        if (!deferredInstallPrompt) return;
+        deferredInstallPrompt.prompt(); await deferredInstallPrompt.userChoice;
+        deferredInstallPrompt = null; installBtn.classList.add("hidden");
+      });
+    }
+    async function syncRemoteCards() {
+      syncStatus = "loading";
+      syncErrorMsg = "";
+      if (activeView === "explore") renderExplore();
+      try {
+        const res = await fetch('./cards.json?t=' + Date.now(), { cache: 'no-store' });
+        if (!res.ok) throw new Error('HTTP ' + res.status + ' loading cards.json');
+        const remote = await res.json();
+        state.library = {
+          cards: Array.isArray(remote.cards) ? remote.cards : [],
+          quizzes: Array.isArray(remote.quizzes) ? remote.quizzes : []
+        };
+        syncStatus = "ok";
+        saveState();
+      } catch (e) {
+        syncStatus = "error";
+        syncErrorMsg = "Could not load cards.json (" + (e.message || "check JSON syntax or open via HTTPS") + ").";
+      }
+      if (activeView === "explore") renderExplore();
+      if (activeView === "quiz") renderQuizHub();
+      if (activeView === "saved") renderSaved();
+    }
+    if (FIREBASE_CONFIG.apiKey && window.firebase) {
+      firebase.initializeApp(FIREBASE_CONFIG);
+      const auth = firebase.auth(), db = firebase.firestore();
+      const googleBtn = document.getElementById("btn-google-signin");
+      const newBtn = googleBtn.cloneNode(true);
+      googleBtn.parentNode.replaceChild(newBtn, googleBtn);
+      newBtn.addEventListener("click", async () => {
+        if (auth.currentUser) { await auth.signOut(); state.user = null; saveState(); renderProfile(); showToast("Signed out"); }
+        else { await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
+      });
+      auth.onAuthStateChanged(async (u) => {
+        if (u) {
+          state.user = { uid: u.uid, name: u.displayName || "Learner", email: u.email };
+          const docRef = db.collection("users").doc(u.uid);
+          const snap = await docRef.get();
+          if (snap.exists) {
+            const remote = snap.data();
+            state.bookmarks = Array.from(new Set([...state.bookmarks, ...(remote.bookmarks || [])]));
+            state.mastered = Array.from(new Set([...state.mastered, ...(remote.mastered || [])]));
+            state.readCardIds = Array.from(new Set([...state.readCardIds, ...(remote.readCardIds || [])]));
+            if (remote.streak && remote.streak.longest > state.streak.longest) state.streak = remote.streak;
+          }
+          await docRef.set({ bookmarks: state.bookmarks, mastered: state.mastered, readCardIds: state.readCardIds, streak: state.streak }, { merge: true });
+          saveState(); renderProfile(); updateStreakUI(false);
+        }
+      });
+    }
+    syncRemoteCards();
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => { navigator.serviceWorker.register('./sw.js').catch(() => {}); });
+    }
+
+  </script>
+</body>
+</html>
