@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bytecards-v4';
+const CACHE_NAME = 'bytecards-v6';
 const SHELL_ASSETS = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', (e) => {
@@ -13,7 +13,7 @@ self.addEventListener('activate', (e) => {
 });
 self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url);
-  if (url.pathname.endsWith('cards.json')) {
+  if (url.pathname.endsWith('cards.json') || url.pathname.endsWith('index.html') || url.pathname.endsWith('/')) {
     e.respondWith(
       fetch(e.request, { cache: 'no-store' })
         .then((res) => { const copy = res.clone(); caches.open(CACHE_NAME).then((c) => c.put(e.request, copy)); return res; })
